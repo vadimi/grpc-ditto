@@ -5,7 +5,7 @@
 
 `grpc-ditto --proto ~/dev/master-lock-svc/types --mocks jsonmocks`
 
-this command will run a server on port `51000` by default, parse all proto files in `--proto` directory and also expose grpc reflection service.
+this command will run a server on port `51000` by default, parse all proto files in `--proto` directory, load all mocks from json files in `--mocks` directory and also expose grpc reflection service.
 
 ### Mock format
 

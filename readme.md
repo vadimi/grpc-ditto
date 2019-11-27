@@ -7,11 +7,12 @@
 
 this command will run a server on port `51000` by default, parse all proto files in `--proto` directory and also expose grpc reflection service.
 
-### Mock examples
+### Mock format
 
 - `method` is fully qualified grpc service method name
 - `matchesJsonPath` supports JSONPath spec: https://goessner.net/articles/JsonPath/
 - `equalToJson` supports protobuf specific json format: https://developers.google.com/protocol-buffers/docs/proto3#json
+- multiple `bodyPatterns` should all match in order for a request to match
 
 ```json
 [
@@ -20,17 +21,15 @@ this command will run a server on port `51000` by default, parse all proto files
       "method": "/videa.masterlock.proto.types.MasterLockService/Lock",
       "bodyPatterns": [
         {
-          "matchesJsonPath": { "expression": "$.name", "equals": "lock1" }
+          "matchesJsonPath": {"expression": "$.name", "equals": "lock1"}
         },
         {
-          "matchesJsonPath": { "expression": "$.duration", "equals": "100" }
+          "matchesJsonPath": {"expression": "$.duration", "equals": "100"}
         }
       ]
     },
     "response": {
-      "body": {
-        "key": "key123"
-      }
+      "body": {"key": "key1"}
     }
   },
   {
@@ -38,17 +37,12 @@ this command will run a server on port `51000` by default, parse all proto files
       "method": "/videa.masterlock.proto.types.MasterLockService/Lock",
       "bodyPatterns": [
         {
-          "equalToJson": {
-            "name": "lock2",
-            "duration": "200"
-          }
+          "equalToJson": {"name": "lock2", "duration": "200"}
         }
       ]
     },
     "response": {
-      "body": {
-        "key": "key2222222"
-      }
+      "body": {"key": "key2"}
     }
   },
   {
@@ -61,9 +55,7 @@ this command will run a server on port `51000` by default, parse all proto files
       ]
     },
     "response": {
-      "body": {
-        "key": "key_all_non_empty"
-      }
+      "body": {"key": "key_all_non_empty"}
     }
   }
 ]

@@ -9,9 +9,9 @@ this command will run a server on port `51000` by default, parse all proto files
 
 ### Mock examples
 
-`method` is fully qualified grpc service method name
-`matchesJsonPath` supports JSONPath spec: https://goessner.net/articles/JsonPath/
-`equalToJson` supports protobuf specific json format: https://developers.google.com/protocol-buffers/docs/proto3#json
+- `method` is fully qualified grpc service method name
+- `matchesJsonPath` supports JSONPath spec: https://goessner.net/articles/JsonPath/
+- `equalToJson` supports protobuf specific json format: https://developers.google.com/protocol-buffers/docs/proto3#json
 
 ```
 [

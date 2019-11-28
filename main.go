@@ -15,7 +15,7 @@ func main() {
 	app.Version = "1.0.0"
 	app.Usage = "grpc mocking server"
 	app.Flags = []cli.Flag{
-		cli.StringFlag{
+		cli.StringSliceFlag{
 			Name:     "proto",
 			Required: true,
 			Usage:    "proto files input directory",

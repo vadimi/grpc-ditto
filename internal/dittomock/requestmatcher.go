@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/bhmj/jsonslice"
+	"github.com/spyzhov/ajson"
 )
 
 var (
@@ -159,33 +159,47 @@ func (rm *RequestMatcher) matches(json []byte, req *DittoRequest) (bool, error) 
 }
 
 func jsonPathMatcher(jsonSrc []byte, pattern *JSONPathWrapper) (bool, error) {
-	val, err := jsonslice.Get(jsonSrc, pattern.Expression)
+	nodes, err := ajson.JSONPath(jsonSrc, pattern.Expression)
 	if err != nil {
 		return false, fmt.Errorf("jsonslice matching: %w, expr: %s", err, pattern.Expression)
 	}
 
-	if len(val) == 0 {
+	if len(nodes) == 0 {
 		return false, nil
 	}
 
 	if pattern.Partial {
-		return len(val) > 0, nil
+		return len(nodes) > 0, nil
+	}
+
+	comparer := func(string, string) bool { return false }
+	patternVal := ""
+
+	if pattern.Contains != "" {
+		comparer = strings.Contains
+		patternVal = pattern.Contains
 	}
 
 	if pattern.Equals != "" {
-		strVal := ""
-		err = json.Unmarshal(val, &strVal)
+		comparer = strings.EqualFold
+		patternVal = pattern.Equals
+	}
+
+	result := false
+	for _, val := range nodes {
+		var strVal string
+		err = json.Unmarshal([]byte(val.String()), &strVal)
 		if err != nil {
 			return false, err
 		}
-		return strings.EqualFold(strVal, pattern.Equals), nil
+
+		result = comparer(strVal, patternVal)
+		if !result {
+			break
+		}
 	}
 
-	if pattern.Contains != "" {
-		return strings.Contains(string(val), pattern.Contains), nil
-	}
-
-	return false, nil
+	return result, nil
 }
 
 func jsonMatcher(jsonVal []byte, expetedJson json.RawMessage) (bool, error) {

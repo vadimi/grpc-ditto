@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"grpc-ditto/internal/dittomock"
+	"grpc-ditto/internal/fs"
 	"grpc-ditto/internal/logger"
+	"io"
 	"net"
 	"os"
 	"os/signal"
@@ -23,17 +25,28 @@ import (
 func mockCmd(ctx *cli.Context) error {
 	log := logger.NewLogger()
 
-	protoDir := ctx.String("proto")
-	protofiles, err := findProtoFiles(protoDir)
+	protoDirs := ctx.StringSlice("proto")
+	protofiles, err := findProtoFiles(protoDirs)
 	if err != nil {
 		return err
 	}
 	if len(protofiles) == 0 {
-		return fmt.Errorf("no proto files found in %s", protoDir)
+		return fmt.Errorf("no proto files found in %s", protoDirs)
 	}
 
-	p := protoparse.Parser{}
-	descrs, err := p.ParseFiles(protofiles...)
+	p := protoparse.Parser{
+		InferImportPaths: true,
+		ImportPaths:      protoDirs,
+		Accessor: func(filename string) (io.ReadCloser, error) {
+			return fs.NewFileReader(filename)
+		},
+	}
+	resolvedFiles, err := protoparse.ResolveFilenames(protoDirs, protofiles...)
+	if err != nil {
+		return err
+	}
+
+	descrs, err := p.ParseFiles(resolvedFiles...)
 	if err != nil {
 		return err
 	}
@@ -90,19 +103,25 @@ func mockCmd(ctx *cli.Context) error {
 	return nil
 }
 
-func findProtoFiles(dir string) ([]string, error) {
+func findProtoFiles(dirs []string) ([]string, error) {
 	protofiles := []string{}
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if filepath.Ext(path) == ".proto" {
-			protofiles = append(protofiles, path)
-		}
-		return nil
-	})
+	for _, dir := range dirs {
+		err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if filepath.Ext(path) == ".proto" {
+				protofiles = append(protofiles, path)
+			}
+			return nil
+		})
 
-	return protofiles, err
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return protofiles, nil
 }
 
 func unknownHandler(srv interface{}, stream grpc.ServerStream) error {

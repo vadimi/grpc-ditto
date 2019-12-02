@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/spyzhov/ajson"
@@ -60,7 +61,7 @@ func (rm *RequestMatcher) Match(method string, json []byte) (*DittoResponse, err
 		}
 
 		if res {
-			return &mock.Response, nil
+			return mock.Response, nil
 		}
 	}
 
@@ -161,7 +162,7 @@ func (rm *RequestMatcher) matches(json []byte, req *DittoRequest) (bool, error) 
 func jsonPathMatcher(jsonSrc []byte, pattern *JSONPathWrapper) (bool, error) {
 	nodes, err := ajson.JSONPath(jsonSrc, pattern.Expression)
 	if err != nil {
-		return false, fmt.Errorf("jsonslice matching: %w, expr: %s", err, pattern.Expression)
+		return false, fmt.Errorf("jsonpath matching: %w, expr: %s", err, pattern.Expression)
 	}
 
 	if len(nodes) == 0 {
@@ -172,28 +173,38 @@ func jsonPathMatcher(jsonSrc []byte, pattern *JSONPathWrapper) (bool, error) {
 		return len(nodes) > 0, nil
 	}
 
-	comparer := func(string, string) bool { return false }
-	patternVal := ""
-
 	if pattern.Contains != "" {
-		comparer = strings.Contains
-		patternVal = pattern.Contains
+		return strings.Contains(nodes[0].String(), pattern.Contains), nil
 	}
 
-	if pattern.Equals != "" {
-		comparer = strings.EqualFold
-		patternVal = pattern.Equals
-	}
-
+	patternVal := pattern.Equals
 	result := false
-	for _, val := range nodes {
-		var strVal string
-		err = json.Unmarshal([]byte(val.String()), &strVal)
-		if err != nil {
-			return false, err
+	for _, node := range nodes {
+
+		switch node.Type() {
+		case ajson.String:
+			strVal, _ := node.GetString()
+			result = strings.EqualFold(strVal, patternVal)
+		case ajson.Numeric:
+			floatVal, err := strconv.ParseFloat(patternVal, 64)
+			if err != nil {
+				return result, err
+			}
+			n, _ := node.GetNumeric()
+			result = (n == floatVal)
+		case ajson.Bool:
+			pbVal, err := strconv.ParseBool(patternVal)
+			if err != nil {
+				return result, err
+			}
+			bVal, _ := node.GetBool()
+			result = pbVal == bVal
+		case ajson.Object, ajson.Array:
+			result, err = jsonMatcher([]byte(node.String()), []byte(patternVal))
+		default:
+			result = false
 		}
 
-		result = comparer(strVal, patternVal)
 		if !result {
 			break
 		}

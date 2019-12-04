@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -178,13 +179,26 @@ func jsonPathMatcher(jsonSrc []byte, pattern *JSONPathWrapper) (bool, error) {
 	}
 
 	patternVal := pattern.Equals
+	isRegexp := false
+	if patternVal == "" {
+		patternVal = pattern.Regexp
+		isRegexp = true
+	}
 	result := false
 	for _, node := range nodes {
 
 		switch node.Type() {
 		case ajson.String:
 			strVal, _ := node.GetString()
-			result = strings.EqualFold(strVal, patternVal)
+			if isRegexp {
+				re, err := regexp.Compile(patternVal)
+				if err != nil {
+					return result, err
+				}
+				result = re.MatchString(strVal)
+			} else {
+				result = strings.EqualFold(strVal, patternVal)
+			}
 		case ajson.Numeric:
 			floatVal, err := strconv.ParseFloat(patternVal, 64)
 			if err != nil {

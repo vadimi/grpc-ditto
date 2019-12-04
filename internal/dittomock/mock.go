@@ -30,6 +30,7 @@ type JSONPathMessage struct {
 	Expression string `json:"expression"`
 	Contains   string `json:"contains"`
 	Equals     string `json:"equals"`
+	Regexp     string `json:"regexp"`
 }
 
 type JSONPathWrapper struct {

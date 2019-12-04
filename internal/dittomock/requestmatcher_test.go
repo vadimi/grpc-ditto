@@ -32,6 +32,49 @@ func TestSimpleJSONMatching(t *testing.T) {
 	}
 }
 
+func TestRegexpMatch(t *testing.T) {
+	tests := []struct {
+		expr        string
+		regexpMatch string
+		src         string
+	}{
+		{"$.name", "^to.*$", `{"name": "tofu"}`},
+		{"$.meal[?(@.name =~ '^tof.*$')].name", "tofu", `{ "meal": [{"name": "apple"},{"name": "tofu"}] }`},
+	}
+
+	for _, test := range tests {
+		m1 := DittoMock{
+			Request: &DittoRequest{
+				Method: "test",
+				BodyPatterns: []DittoBodyPattern{
+					DittoBodyPattern{
+						MatchesJsonPath: &JSONPathWrapper{
+							JSONPathMessage: JSONPathMessage{
+								Expression: test.expr,
+								Regexp:     test.regexpMatch,
+							},
+						},
+					},
+				},
+			},
+			Response: &DittoResponse{
+				Body: []byte("ok"),
+			},
+		}
+		mocks := []DittoMock{m1}
+		rm, _ := NewRequestMatcher(WithMocks(mocks))
+		mresp, err := rm.Match("test", []byte(test.src))
+		if err != nil {
+			t.Errorf("matching error not expected for expected result '%s', got %s", test.regexpMatch, err)
+			return
+		}
+
+		if mresp == nil || !bytes.Equal([]byte("ok"), mresp.Body) {
+			t.Errorf("Expected 'ok', got: %s", mresp.Body)
+		}
+	}
+}
+
 func TestSimpleJSONPathEqualsMatching(t *testing.T) {
 	tests := []struct {
 		expr   string

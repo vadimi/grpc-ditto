@@ -19,7 +19,7 @@ func regexMatchOp(left *ajson.Node, right *ajson.Node) (node *ajson.Node, err er
 	if err != nil {
 		return nil, err
 	}
-	res, err := regexp.Match(pattern, []byte(val))
+	res, err := regexp.MatchString(pattern, val)
 	if err != nil {
 		return nil, err
 	}

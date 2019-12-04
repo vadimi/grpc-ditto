@@ -42,6 +42,7 @@ func TestSimpleJSONPathEqualsMatching(t *testing.T) {
 		{"$.meal.name", "tofu", `{ "meal": {"name": "tofu"} }`},
 		{"$.meal[1].name", "tofu", `{ "meal": [{"name": "apple"},{"name": "tofu"}] }`},
 		{"$.meal[?(@.name == 'tofu')].name", "tofu", `{ "meal": [{"name": "apple"},{"name": "tofu"}] }`},
+		{"$.meal[?(@.name =~ '^tof.*$')].name", "tofu", `{ "meal": [{"name": "apple"},{"name": "tofu"}] }`},
 		{"$.stationIds", "[1, 2]", `{ "stationIds": [1, 2] }`},
 		{"$.result", "true", `{ "result": true }`},
 	}

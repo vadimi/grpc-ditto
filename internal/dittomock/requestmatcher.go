@@ -185,6 +185,11 @@ func jsonPathMatcher(jsonSrc []byte, pattern *JSONPathWrapper) (bool, error) {
 		isRegexp = true
 	}
 	result := false
+
+	if patternVal == "" {
+		return result, errors.New("matching expressions cannot be empty")
+	}
+
 	for _, node := range nodes {
 
 		switch node.Type() {

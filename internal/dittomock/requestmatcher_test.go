@@ -39,6 +39,7 @@ func TestRegexpMatch(t *testing.T) {
 		src         string
 	}{
 		{"$.name", "^to.*$", `{"name": "tofu"}`},
+		{"$.name", "^callback[-]svc.*$", `{"name": "callback-svc"}`},
 		{"$.meal[?(@.name =~ '^tof.*$')].name", "tofu", `{ "meal": [{"name": "apple"},{"name": "tofu"}] }`},
 	}
 

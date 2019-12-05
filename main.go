@@ -20,6 +20,11 @@ func main() {
 			Required: true,
 			Usage:    "proto files input directory",
 		},
+		cli.StringSliceFlag{
+			Name:     "protoimports",
+			Required: false,
+			Usage:    "additional directories to search for dependencies",
+		},
 		cli.StringFlag{
 			Name:     "mocks",
 			Required: true,

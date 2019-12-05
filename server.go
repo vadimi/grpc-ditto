@@ -42,20 +42,33 @@ func (s *mockServer) findMessageByMethod(method string) *desc.MethodDescriptor {
 
 func (s *mockServer) fileDescriptors() (map[string][]byte, error) {
 	result := map[string][]byte{}
-	for _, d := range s.descrs {
+	err := s.processDescriptiors(s.descrs, result)
+	return result, err
+}
+
+func (s *mockServer) processDescriptiors(descrs []*desc.FileDescriptor, compressed map[string][]byte) error {
+	for _, d := range descrs {
+		if _, ok := compressed[d.GetName()]; ok {
+			continue
+		}
 		fd := d.AsFileDescriptorProto()
 		fDescBytes, err := proto.Marshal(fd)
 		if err != nil {
-			return result, err
+			return err
 		}
 		zipFd, err := compressBytes(fDescBytes)
 		if err != nil {
-			return result, err
+			return err
 		}
-		result[fd.GetName()] = zipFd
+		compressed[fd.GetName()] = zipFd
+
+		err = s.processDescriptiors(d.GetDependencies(), compressed)
+		if err != nil {
+			return err
+		}
 	}
 
-	return result, nil
+	return nil
 }
 
 func (s *mockServer) serviceDescriptors() []*grpc.ServiceDesc {
@@ -110,6 +123,9 @@ func mockHandler(srv interface{}, ctx context.Context, dec func(interface{}) err
 	mockSrv.logger.Debugw("matching request", "req", string(js))
 	respMock, err := mockSrv.matcher.Match(fullMethodName, js)
 	if err != nil {
+		if errors.Is(err, dittomock.ErrNotMatched) {
+			mockSrv.logger.Warn("no match found")
+		}
 		return nil, status.Errorf(codes.Unimplemented, "unimplemented mock for method: %s", fullMethodName)
 	}
 

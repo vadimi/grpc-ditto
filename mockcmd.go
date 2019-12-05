@@ -6,6 +6,7 @@ import (
 	"grpc-ditto/internal/fs"
 	"grpc-ditto/internal/logger"
 	"io"
+	"io/ioutil"
 	"net"
 	"os"
 	"os/signal"
@@ -13,6 +14,7 @@ import (
 	"syscall"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/urfave/cli"
 	"google.golang.org/grpc"
@@ -24,29 +26,9 @@ import (
 
 func mockCmd(ctx *cli.Context) error {
 	log := logger.NewLogger()
+	grpclog.SetLoggerV2(logger.NewGrpcLogger("error"))
 
-	protoDirs := ctx.StringSlice("proto")
-	protofiles, err := findProtoFiles(protoDirs)
-	if err != nil {
-		return err
-	}
-	if len(protofiles) == 0 {
-		return fmt.Errorf("no proto files found in %s", protoDirs)
-	}
-
-	p := protoparse.Parser{
-		InferImportPaths: true,
-		ImportPaths:      protoDirs,
-		Accessor: func(filename string) (io.ReadCloser, error) {
-			return fs.NewFileReader(filename)
-		},
-	}
-	resolvedFiles, err := protoparse.ResolveFilenames(protoDirs, protofiles...)
-	if err != nil {
-		return err
-	}
-
-	descrs, err := p.ParseFiles(resolvedFiles...)
+	descrs, err := parseProtoFiles(ctx)
 	if err != nil {
 		return err
 	}
@@ -58,11 +40,9 @@ func mockCmd(ctx *cli.Context) error {
 		dittomock.WithLogger(log),
 	)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	grpclog.SetLoggerV2(logger.NewGrpcLogger("error"))
 
-	server := grpc.NewServer(grpc.UnknownServiceHandler(unknownHandler))
 	mockServer := &mockServer{
 		descrs:  descrs,
 		logger:  log,
@@ -73,10 +53,14 @@ func mockCmd(ctx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("cannot parse file descriptors: %w", err)
 	}
+
+	// registering files is required to setup reflection service
 	for name, fd := range fileDescrs {
 		log.Infow("register mock file", "name", name)
 		proto.RegisterFile(name, fd)
 	}
+
+	server := grpc.NewServer(grpc.UnknownServiceHandler(unknownHandler))
 	for _, mockService := range mockServer.serviceDescriptors() {
 		log.Infow("register mock service", "service", mockService.ServiceName)
 		server.RegisterService(mockService, mockServer)
@@ -103,21 +87,48 @@ func mockCmd(ctx *cli.Context) error {
 	return nil
 }
 
+func parseProtoFiles(ctx *cli.Context) ([]*desc.FileDescriptor, error) {
+	protoDirs := ctx.StringSlice("proto")
+	protofiles, err := findProtoFiles(protoDirs)
+	if err != nil {
+		return nil, err
+	}
+	if len(protofiles) == 0 {
+		return nil, fmt.Errorf("no proto files found in %s", protoDirs)
+	}
+
+	// additional directories to look for dependencies
+	for _, d := range ctx.StringSlice("protoimports") {
+		protoDirs = append(protoDirs, d)
+	}
+
+	p := protoparse.Parser{
+		ImportPaths: protoDirs,
+		Accessor: func(filename string) (io.ReadCloser, error) {
+			return fs.NewFileReader(filename)
+		},
+	}
+
+	resolvedFiles, err := protoparse.ResolveFilenames(protoDirs, protofiles...)
+	if err != nil {
+		return nil, err
+	}
+
+	return p.ParseFiles(resolvedFiles...)
+}
+
 func findProtoFiles(dirs []string) ([]string, error) {
 	protofiles := []string{}
 	for _, dir := range dirs {
-		err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			if filepath.Ext(path) == ".proto" {
-				protofiles = append(protofiles, path)
-			}
-			return nil
-		})
-
+		files, err := ioutil.ReadDir(dir)
 		if err != nil {
 			return nil, err
+		}
+
+		for _, f := range files {
+			if filepath.Ext(f.Name()) == ".proto" {
+				protofiles = append(protofiles, f.Name())
+			}
 		}
 	}
 

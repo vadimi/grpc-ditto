@@ -43,6 +43,15 @@ func mockCmd(ctx *cli.Context) error {
 		return err
 	}
 
+	// health check service
+	// implement it using mocks to allow using/overriding health mocks for other purposes
+	healthcheckDescr, err := healthCheckFileDescriptor()
+	if err != nil {
+		return err
+	}
+	descrs = append(descrs, healthcheckDescr)
+	requestMatcher.AddMock(healthCheckMocks())
+
 	mockServer := &mockServer{
 		descrs:  descrs,
 		logger:  log,
@@ -65,6 +74,7 @@ func mockCmd(ctx *cli.Context) error {
 		log.Infow("register mock service", "service", mockService.ServiceName)
 		server.RegisterService(mockService, mockServer)
 	}
+
 	reflection.Register(server)
 
 	port := ctx.Int("port")
@@ -137,4 +147,20 @@ func findProtoFiles(dirs []string) ([]string, error) {
 
 func unknownHandler(srv interface{}, stream grpc.ServerStream) error {
 	return status.Error(codes.Unimplemented, "unimplemented mock")
+}
+
+func healthCheckMocks() dittomock.DittoMock {
+	return dittomock.DittoMock{
+		Request: &dittomock.DittoRequest{
+			Method: "/grpc.health.v1.Health/Check",
+			BodyPatterns: []dittomock.DittoBodyPattern{
+				dittomock.DittoBodyPattern{
+					EqualToJson: []byte("{}"),
+				},
+			},
+		},
+		Response: &dittomock.DittoResponse{
+			Body: []byte(`{ "status": "SERVING" }`),
+		},
+	}
 }

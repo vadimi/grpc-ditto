@@ -7,15 +7,19 @@ import (
 	"fmt"
 	"grpc-ditto/internal/dittomock"
 	"grpc-ditto/internal/logger"
+	"io"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/dynamic"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	_ "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 type MockServer interface {
@@ -146,4 +150,34 @@ func compressBytes(src []byte) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+func uncompressBytes(src []byte) ([]byte, error) {
+	var buf bytes.Buffer
+	zr, err := gzip.NewReader(bytes.NewReader(src))
+	if err != nil {
+		return nil, err
+	}
+	defer zr.Close()
+
+	_, err = io.Copy(&buf, zr)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func healthCheckFileDescriptor() (*desc.FileDescriptor, error) {
+	fd := proto.FileDescriptor("grpc/health/v1/health.proto")
+	fdRaw, err := uncompressBytes(fd)
+	if err != nil {
+		return nil, fmt.Errorf("uncompress health check descriptor: %w", err)
+	}
+	fdp := &descriptor.FileDescriptorProto{}
+	err = proto.Unmarshal(fdRaw, fdp)
+	if err != nil {
+		return nil, fmt.Errorf("proto unmarshal health check descriptor: %w", err)
+	}
+	return desc.CreateFileDescriptor(fdp)
 }

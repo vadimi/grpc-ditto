@@ -105,6 +105,10 @@ func NewRequestMatcher(opts ...RequestMatherOption) (*RequestMatcher, error) {
 	return matcher, nil
 }
 
+func (rm *RequestMatcher) AddMock(mock DittoMock) {
+	mergeMocks([]DittoMock{mock}, rm.rules)
+}
+
 func (rm *RequestMatcher) loadMock(mockJson string) ([]DittoMock, error) {
 	mocks := []DittoMock{}
 	js, err := ioutil.ReadFile(mockJson)

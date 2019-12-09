@@ -47,11 +47,11 @@ func (s *mockServer) findMessageByMethod(method string) *desc.MethodDescriptor {
 
 func (s *mockServer) fileDescriptors() (map[string][]byte, error) {
 	result := map[string][]byte{}
-	err := s.processDescriptiors(s.descrs, result)
+	err := s.processDescriptors(s.descrs, result)
 	return result, err
 }
 
-func (s *mockServer) processDescriptiors(descrs []*desc.FileDescriptor, compressed map[string][]byte) error {
+func (s *mockServer) processDescriptors(descrs []*desc.FileDescriptor, compressed map[string][]byte) error {
 	for _, d := range descrs {
 		if _, ok := compressed[d.GetName()]; ok {
 			continue
@@ -67,7 +67,7 @@ func (s *mockServer) processDescriptiors(descrs []*desc.FileDescriptor, compress
 		}
 		compressed[fd.GetName()] = zipFd
 
-		err = s.processDescriptiors(d.GetDependencies(), compressed)
+		err = s.processDescriptors(d.GetDependencies(), compressed)
 		if err != nil {
 			return err
 		}

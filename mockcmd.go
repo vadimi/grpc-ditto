@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"grpc-ditto/api"
 	"grpc-ditto/internal/dittomock"
 	"grpc-ditto/internal/fs"
 	"grpc-ditto/internal/logger"
+	"grpc-ditto/internal/services"
 	"io"
 	"io/ioutil"
 	"net"
@@ -74,6 +76,8 @@ func mockCmd(ctx *cli.Context) error {
 		log.Infow("register mock service", "service", mockService.ServiceName)
 		server.RegisterService(mockService, mockServer)
 	}
+
+	api.RegisterMockingServiceServer(server, services.NewMockingService(requestMatcher))
 
 	reflection.Register(server)
 

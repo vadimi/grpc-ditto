@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package grpcditto.proto;
+
+option go_package = "api";
+option csharp_namespace = "GrpcDitto.Proto";
+
+service MockingService {
+  rpc AddMock(AddMockRequest) returns (AddMockResponse);
+}
+
+message AddMockRequest {
+  DittoMock mock = 1;
+}
+
+message AddMockResponse {}
+
+message DittoMock {
+  DittoRequest request = 1;
+	DittoResponse response = 2;
+}
+
+message DittoRequest {
+  string method = 1;
+	repeated DittoBodyPattern body_patterns = 2;
+}
+
+message DittoResponse {
+	string body = 1;
+}
+
+message DittoBodyPattern {
+  oneof pattern {
+    string equal_to_json = 1;
+    JSONPathPattern matches_jsonpath = 2;
+  }
+}
+
+message JSONPathPattern {
+	string expression = 1;
+  oneof operator {
+    string contains = 2;
+    string equals = 3;
+    string regexp = 4;
+  }
+}

@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/spyzhov/ajson"
 )
@@ -46,9 +47,13 @@ type RequestMatcher struct {
 	rules     map[string][]DittoMock
 	logger    logger.Logger
 	mocksPath string
+	rw        sync.RWMutex
 }
 
 func (rm *RequestMatcher) Match(method string, json []byte) (*DittoResponse, error) {
+	rm.rw.RLock()
+	defer rm.rw.RUnlock()
+
 	mocks, ok := rm.rules[method]
 	if !ok {
 		return nil, ErrNotMatched
@@ -106,6 +111,9 @@ func NewRequestMatcher(opts ...RequestMatherOption) (*RequestMatcher, error) {
 }
 
 func (rm *RequestMatcher) AddMock(mock DittoMock) {
+	rm.rw.Lock()
+	defer rm.rw.Unlock()
+
 	mergeMocks([]DittoMock{mock}, rm.rules)
 }
 

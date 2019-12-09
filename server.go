@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"compress/gzip"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"grpc-ditto/internal/dittomock"
@@ -10,11 +11,11 @@ import (
 	"io"
 	"strings"
 
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/dynamic"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -83,13 +84,14 @@ func (s *mockServer) serviceDescriptors() []*grpc.ServiceDesc {
 				ServiceName: service.GetFullyQualifiedName(),
 				HandlerType: (*MockServer)(nil),
 				Metadata:    d.AsFileDescriptorProto().GetName(),
-				Methods:     []grpc.MethodDesc{},
+				Streams:     []grpc.StreamDesc{},
 			}
 
 			for _, m := range service.GetMethods() {
-				grpcSvcDesc.Methods = append(grpcSvcDesc.Methods, grpc.MethodDesc{
-					MethodName: m.GetName(),
-					Handler:    mockHandler,
+				grpcSvcDesc.Streams = append(grpcSvcDesc.Streams, grpc.StreamDesc{
+					StreamName:    m.GetName(),
+					Handler:       mockServerStreamHandler,
+					ServerStreams: m.IsServerStreaming(),
 				})
 			}
 
@@ -100,10 +102,10 @@ func (s *mockServer) serviceDescriptors() []*grpc.ServiceDesc {
 	return result
 }
 
-func mockHandler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	fullMethodName, ok := grpc.Method(ctx)
+func mockServerStreamHandler(srv interface{}, stream grpc.ServerStream) error {
+	fullMethodName, ok := grpc.Method(stream.Context())
 	if !ok {
-		return nil, errors.New("something is really wrong, method name not found in the request")
+		return errors.New("something is really wrong, method name not found in the request")
 	}
 
 	mockSrv := srv.(*mockServer)
@@ -111,18 +113,19 @@ func mockHandler(srv interface{}, ctx context.Context, dec func(interface{}) err
 
 	methodDesc := mockSrv.findMessageByMethod(fullMethodName)
 	if methodDesc == nil {
-		return nil, status.Errorf(codes.Unimplemented, "unimplemented mock for method: %s", fullMethodName)
+		return status.Errorf(codes.Unimplemented, "unimplemented mock for method: %s", fullMethodName)
 	}
 
 	in := dynamic.NewMessage(methodDesc.GetInputType())
-	if err := dec(in); err != nil {
-		return nil, err
+
+	if err := stream.RecvMsg(in); err != nil {
+		return err
 	}
 
-	js, err := in.MarshalJSON()
+	js, err := in.MarshalJSONPB(&jsonpb.Marshaler{OrigName: true})
 	if err != nil {
 		mockSrv.logger.Error(fmt.Errorf("input message json marshaling: %w", err))
-		return nil, status.Errorf(codes.Unknown, "input message json marshaling: %s", err)
+		return status.Errorf(codes.Unknown, "input message json marshaling: %s", err)
 	}
 	mockSrv.logger.Debugw("matching request", "req", string(js))
 	respMock, err := mockSrv.matcher.Match(fullMethodName, js)
@@ -130,12 +133,40 @@ func mockHandler(srv interface{}, ctx context.Context, dec func(interface{}) err
 		if errors.Is(err, dittomock.ErrNotMatched) {
 			mockSrv.logger.Warn("no match found")
 		}
-		return nil, status.Errorf(codes.Unimplemented, "unimplemented mock for method: %s", fullMethodName)
+		return status.Errorf(codes.Unimplemented, "unimplemented mock for method: %s", fullMethodName)
 	}
 
 	output := dynamic.NewMessage(methodDesc.GetOutputType())
-	err = output.UnmarshalJSON(respMock.Body)
-	return output, err
+
+	outputMessages := []json.RawMessage{respMock.Body}
+
+	if methodDesc.IsServerStreaming() {
+		if respMock.Body[0] != '[' {
+			err := fmt.Errorf("server streaming method requires array in response body: %s", fullMethodName)
+			mockSrv.logger.Error(err)
+			return status.Error(codes.Unimplemented, err.Error())
+		}
+
+		var arr []json.RawMessage
+		if err := json.Unmarshal(respMock.Body, &arr); err != nil {
+			return status.Errorf(codes.Unknown, "output message json unmarshaling: %s", err)
+		}
+		outputMessages = arr
+	}
+
+	for _, msg := range outputMessages {
+		err = output.UnmarshalJSON(msg)
+		if err != nil {
+			return err
+		}
+
+		err = stream.SendMsg(output)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func compressBytes(src []byte) ([]byte, error) {

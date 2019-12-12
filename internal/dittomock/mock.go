@@ -29,7 +29,7 @@ type DittoBodyPattern struct {
 type JSONPathMessage struct {
 	Expression string `json:"expression"`
 	Contains   string `json:"contains"`
-	Equals     string `json:"equals"`
+	Equals     string `json:"eq"`
 	Regexp     string `json:"regexp"`
 }
 

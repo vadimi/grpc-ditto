@@ -110,6 +110,13 @@ func NewRequestMatcher(opts ...RequestMatherOption) (*RequestMatcher, error) {
 	return matcher, nil
 }
 
+func (rm *RequestMatcher) Clear() {
+	rm.rw.Lock()
+	defer rm.rw.Unlock()
+
+	rm.rules = map[string][]DittoMock{}
+}
+
 func (rm *RequestMatcher) AddMock(mock DittoMock) {
 	rm.rw.Lock()
 	defer rm.rw.Unlock()

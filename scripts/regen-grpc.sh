@@ -2,7 +2,6 @@
 
 cwd=$(dirname "$(realpath $0)")
 localbin=$(readlink -f $cwd/../.bin)
-echo $localbin
 
 # check that protoc compiler exists and download it if required
 PROTOBUF_VERSION=3.11.1

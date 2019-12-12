@@ -23,6 +23,7 @@ import (
 	_ "google.golang.org/grpc/health/grpc_health_v1"
 )
 
+// MockServer is an interface that grpc reflection expects to register types
 type MockServer interface {
 }
 
@@ -88,6 +89,8 @@ func (s *mockServer) serviceDescriptors() []*grpc.ServiceDesc {
 			}
 
 			for _, m := range service.GetMethods() {
+				// in grpc-go all methods are implemented as streams
+				// so we just need one handler to rule them all
 				grpcSvcDesc.Streams = append(grpcSvcDesc.Streams, grpc.StreamDesc{
 					StreamName:    m.GetName(),
 					Handler:       mockServerStreamHandler,
@@ -132,6 +135,9 @@ func mockServerStreamHandler(srv interface{}, stream grpc.ServerStream) error {
 	if err != nil {
 		if errors.Is(err, dittomock.ErrNotMatched) {
 			mockSrv.logger.Warn("no match found")
+		} else {
+
+			mockSrv.logger.Error(err)
 		}
 		return status.Errorf(codes.Unimplemented, "unimplemented mock for method: %s", fullMethodName)
 	}
@@ -157,6 +163,7 @@ func mockServerStreamHandler(srv interface{}, stream grpc.ServerStream) error {
 	for _, msg := range outputMessages {
 		err = output.UnmarshalJSON(msg)
 		if err != nil {
+			mockSrv.logger.Error(err)
 			return err
 		}
 

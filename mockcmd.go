@@ -77,7 +77,7 @@ func mockCmd(ctx *cli.Context) error {
 		server.RegisterService(mockService, mockServer)
 	}
 
-	api.RegisterMockingServiceServer(server, services.NewMockingService(requestMatcher))
+	api.RegisterMockingServiceServer(server, services.NewMockingService(requestMatcher, log))
 
 	reflection.Register(server)
 

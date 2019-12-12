@@ -2,11 +2,17 @@ syntax = "proto3";
 
 package grpcditto.proto;
 
+import "google/protobuf/struct.proto";
+
 option go_package = "api";
 option csharp_namespace = "GrpcDitto.Proto";
 
 service MockingService {
+  // AddMock adds new mock to the server
   rpc AddMock(AddMockRequest) returns (AddMockResponse);
+
+  // Delete all mocks
+  rpc Clear(ClearRequest) returns (ClearResponse);
 }
 
 message AddMockRequest {
@@ -20,27 +26,45 @@ message DittoMock {
 	DittoResponse response = 2;
 }
 
+// DittoRequest represents request matching object. It matches requests first by method and then by patterns.
+// All patterns must match in order for a request to match.
+// If no matches are found the service will return ``Unimplemented`` grpc error.
+// If there multiple matches are found the first one is what gets returned, the other ones will be ignored.
 message DittoRequest {
+  // fully qualified grpc method like ``/videa.relyingparty.proto.types.RelyingPartyService/Delete``
   string method = 1;
 	repeated DittoBodyPattern body_patterns = 2;
 }
 
 message DittoResponse {
-	string body = 1;
+  // Struct conveniently represents any object that doesn't have a strict schema
+	google.protobuf.Struct body = 1;
 }
 
 message DittoBodyPattern {
   oneof pattern {
-    string equal_to_json = 1;
+    google.protobuf.Struct equal_to_json = 1;
     JSONPathPattern matches_jsonpath = 2;
   }
 }
 
+/* JSONPath pattern supports JSONPath spec
+
+Examples
+^^^^^^^^
+
+     { "expression": "$.message_type", "eq": "resource" }
+     { "expression": "$.message_type", "contains": "re" }
+     { "expression": "$.name", "regexp": "^callback[-]svc.*$" }
+*/
 message JSONPathPattern {
-	string expression = 1;
+  string expression = 1;
   oneof operator {
     string contains = 2;
-    string equals = 3;
+    string eq = 3;
     string regexp = 4;
   }
 }
+
+message ClearRequest {}
+message ClearResponse {}

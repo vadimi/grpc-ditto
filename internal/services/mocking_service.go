@@ -1,25 +1,39 @@
 package services
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"grpc-ditto/api"
 	"grpc-ditto/internal/dittomock"
+	"grpc-ditto/internal/logger"
 
+	"github.com/golang/protobuf/jsonpb"
+	pstruct "github.com/golang/protobuf/ptypes/struct"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type mockingServiceImpl struct {
 	matcher *dittomock.RequestMatcher
+	log     logger.Logger
 }
 
-func NewMockingService(matcher *dittomock.RequestMatcher) api.MockingServiceServer {
+func NewMockingService(matcher *dittomock.RequestMatcher, log logger.Logger) api.MockingServiceServer {
 	return &mockingServiceImpl{
 		matcher: matcher,
+		log:     log,
 	}
 }
 
+func (s *mockingServiceImpl) Clear(ctx context.Context, req *api.ClearRequest) (*api.ClearResponse, error) {
+	s.log.Info("clear all mocks")
+	s.matcher.Clear()
+	return &api.ClearResponse{}, nil
+}
+
 func (s *mockingServiceImpl) AddMock(ctx context.Context, req *api.AddMockRequest) (*api.AddMockResponse, error) {
+	s.log.Infow("add new mock", "method", req.Mock.Request.Method)
 	resp := &api.AddMockResponse{}
 
 	if req.Mock == nil {
@@ -34,18 +48,36 @@ func (s *mockingServiceImpl) AddMock(ctx context.Context, req *api.AddMockReques
 		return resp, status.Error(codes.InvalidArgument, "mock request method is required")
 	}
 
-	s.matcher.AddMock(dittoMock(req))
+	msgJS, _ := (&jsonpb.Marshaler{}).MarshalToString(req)
+	s.log.Debugw("adding mock", "method", req.Mock.Request.Method, "msgJS", msgJS)
+
+	mock, err := dittoMock(req)
+	if err != nil {
+		s.log.Errorw("converting mock", "err", err)
+		return nil, err
+	}
+
+	s.matcher.AddMock(mock)
 
 	return &api.AddMockResponse{}, nil
 }
 
-func dittoMock(req *api.AddMockRequest) dittomock.DittoMock {
-	respBody := req.Mock.Response.Body
-	if respBody == "" {
-		respBody = "{}"
+func dittoMock(req *api.AddMockRequest) (dittomock.DittoMock, error) {
+	m := dittomock.DittoMock{}
+
+	var respBody []byte
+	var err error
+	if req.Mock.Response != nil {
+		respBody, err = structToBytes(req.Mock.Response.Body)
+		if err != nil {
+			return m, fmt.Errorf("structToBytes: %w", err)
+		}
 	}
 
-	m := dittomock.DittoMock{}
+	if len(respBody) == 0 {
+		respBody = []byte("{}")
+	}
+
 	m.Response = &dittomock.DittoResponse{
 		Body: []byte(respBody),
 	}
@@ -60,7 +92,11 @@ func dittoMock(req *api.AddMockRequest) dittomock.DittoMock {
 
 		switch reqPattern.GetPattern().(type) {
 		case *api.DittoBodyPattern_EqualToJson:
-			p.EqualToJson = []byte(reqPattern.GetEqualToJson())
+			b, err := structToBytes(reqPattern.GetEqualToJson())
+			if err != nil {
+				return m, fmt.Errorf("structToBytes conversion of equal_to_json: %w", err)
+			}
+			p.EqualToJson = b
 		case *api.DittoBodyPattern_MatchesJsonpath:
 			p.MatchesJsonPath = jsonPathWrapper(reqPattern.GetMatchesJsonpath())
 		}
@@ -68,7 +104,7 @@ func dittoMock(req *api.AddMockRequest) dittomock.DittoMock {
 		m.Request.BodyPatterns = append(m.Request.BodyPatterns, p)
 	}
 
-	return m
+	return m, nil
 }
 
 func jsonPathWrapper(p *api.JSONPathPattern) *dittomock.JSONPathWrapper {
@@ -79,8 +115,8 @@ func jsonPathWrapper(p *api.JSONPathPattern) *dittomock.JSONPathWrapper {
 	}
 
 	switch p.GetOperator().(type) {
-	case *api.JSONPathPattern_Equals:
-		w.JSONPathMessage.Equals = p.GetEquals()
+	case *api.JSONPathPattern_Eq:
+		w.JSONPathMessage.Equals = p.GetEq()
 	case *api.JSONPathPattern_Regexp:
 		w.JSONPathMessage.Regexp = p.GetRegexp()
 	case *api.JSONPathPattern_Contains:
@@ -90,4 +126,17 @@ func jsonPathWrapper(p *api.JSONPathPattern) *dittomock.JSONPathWrapper {
 	}
 
 	return w
+}
+
+func structToBytes(msg *pstruct.Struct) ([]byte, error) {
+	if msg == nil {
+		return nil, nil
+	}
+
+	buf := &bytes.Buffer{}
+	if err := (&jsonpb.Marshaler{OrigName: true}).Marshal(buf, msg); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }

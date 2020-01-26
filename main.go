@@ -1,8 +1,9 @@
 package main
 
 import (
-	"grpc-ditto/internal/logger"
 	"os"
+
+	"github.com/videa-tv/grpc-ditto/internal/logger"
 
 	"github.com/urfave/cli"
 )

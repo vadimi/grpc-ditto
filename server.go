@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"grpc-ditto/internal/dittomock"
-	"grpc-ditto/internal/logger"
+	"github.com/videa-tv/grpc-ditto/internal/dittomock"
+	"github.com/videa-tv/grpc-ditto/internal/logger"
 	"io"
 	"strings"
 

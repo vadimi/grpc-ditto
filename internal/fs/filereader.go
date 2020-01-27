@@ -20,11 +20,15 @@ func NewFileReader(path string) (io.ReadCloser, error) {
 		return nil, err
 	}
 
+	return NewReader(f)
+}
+
+func NewReader(r io.ReadCloser) (io.ReadCloser, error){
 	bom := unicode.BOMOverride(unicode.UTF8.NewDecoder())
-	unicodeReader := transform.NewReader(f, bom)
-	r := &noBomReader{
-		Closer: f,
+	unicodeReader := transform.NewReader(r, bom)
+	br := &noBomReader{
+		Closer: r,
 		Reader: unicodeReader,
 	}
-	return r, nil
+	return br, nil
 }

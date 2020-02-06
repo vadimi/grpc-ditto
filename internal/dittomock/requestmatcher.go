@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"grpc-ditto/internal/logger"
+	"github.com/videa-tv/grpc-ditto/internal/logger"
 	"io/ioutil"
 	"os"
 	"path/filepath"

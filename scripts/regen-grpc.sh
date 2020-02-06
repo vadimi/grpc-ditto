@@ -5,9 +5,9 @@ localbin=$(readlink -f $cwd/../.bin)
 
 # check that protoc compiler exists and download it if required
 PROTOBUF_VERSION=3.11.1
-PROTOC_FILENAME=protoc-${PROTOBUF_VERSION}-linux-x86_64.zip
 PROTOC_PATH=$localbin/protoc-$PROTOBUF_VERSION
 if [ ! -d $PROTOC_PATH ] ; then
+    PROTOC_FILENAME=protoc-${PROTOBUF_VERSION}-linux-x86_64.zip
     mkdir -p $PROTOC_PATH
     curl -L https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOBUF_VERSION}/${PROTOC_FILENAME} > $localbin/$PROTOC_FILENAME
     mkdir -p $PROTOC_PATH

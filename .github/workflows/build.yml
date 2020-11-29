@@ -16,3 +16,9 @@ jobs:
       - name: build
         run: |
           go build
+
+      - name: test
+        run: |
+          curl -L https://github.com/gotestyourself/gotestsum/releases/download/v0.6.0/gotestsum_0.6.0_linux_amd64.tar.gz | tar -C /usr/local -xz
+          gotestsum --format short-verbose --no-summary=skipped ./...
+

@@ -1,0 +1,29 @@
+name: build
+
+on: [push]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v2
+
+      - name: setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.15
+
+      - name: build
+        env:
+          CGO_ENABLED: 0
+        run: |
+          go build -ldflags="-s -w"
+
+      - name: test
+        run: |
+          curl -L https://github.com/gotestyourself/gotestsum/releases/download/v0.6.0/gotestsum_0.6.0_linux_amd64.tar.gz | sudo tar -C /usr/local/bin -xz
+          gotestsum --format short-verbose --no-summary=skipped ./...
+

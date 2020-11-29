@@ -68,7 +68,7 @@ jobs:
   release:
     name: release
     outputs:
-      release_url: ${{ steps.get-user.outputs.uid_gid }}
+      release_url: ${{ steps.create_release.outputs.upload_url }}
     needs: build
     runs-on: ubuntu-latest
     #if: startsWith(github.ref, 'refs/tags/v')
@@ -97,9 +97,6 @@ jobs:
             ${{ github.ref  }}
           draft: false
           prerelease: true
-      - name: output
-        run: |
-          echo "::set-output name=release_url::${{ steps.create_release.outputs.upload_url }}"
 
   upload-artifacts:
     name: upload-artifacts
@@ -123,7 +120,6 @@ jobs:
         run: |
           PACKAGE_NAME=grpc-ditto.${{ matrix.goos }}.${{ matrix.goarch }}.tar.gz
           tar -czvf $PACKAGE_NAME -C ${{ matrix.goos }}_${{ matrix.goarch }} .
-          ls -lah
           echo ::set-output name=name::${PACKAGE_NAME}
 
       - name: upload asset

@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/videa-tv/grpc-ditto/api"
-	"github.com/videa-tv/grpc-ditto/internal/dittomock"
-	"github.com/videa-tv/grpc-ditto/internal/logger"
+
+	"github.com/vadimi/grpc-ditto/api"
+	"github.com/vadimi/grpc-ditto/internal/dittomock"
+	"github.com/vadimi/grpc-ditto/internal/logger"
 
 	"github.com/golang/protobuf/jsonpb"
 	pstruct "github.com/golang/protobuf/ptypes/struct"

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/videa-tv/grpc-ditto/internal/logger"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -13,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/vadimi/grpc-ditto/internal/logger"
 
 	"github.com/spyzhov/ajson"
 )

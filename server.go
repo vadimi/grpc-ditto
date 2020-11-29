@@ -6,10 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/videa-tv/grpc-ditto/internal/dittomock"
-	"github.com/videa-tv/grpc-ditto/internal/logger"
 	"io"
 	"strings"
+
+	"github.com/vadimi/grpc-ditto/internal/dittomock"
+	"github.com/vadimi/grpc-ditto/internal/logger"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"

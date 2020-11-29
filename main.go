@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/videa-tv/grpc-ditto/internal/logger"
+	"github.com/vadimi/grpc-ditto/internal/logger"
 
 	"github.com/urfave/cli"
 )

@@ -2,11 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/videa-tv/grpc-ditto/api"
-	"github.com/videa-tv/grpc-ditto/internal/dittomock"
-	"github.com/videa-tv/grpc-ditto/internal/fs"
-	"github.com/videa-tv/grpc-ditto/internal/logger"
-	"github.com/videa-tv/grpc-ditto/internal/services"
 	"io"
 	"io/ioutil"
 	"net"
@@ -14,6 +9,12 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
+
+	"github.com/vadimi/grpc-ditto/api"
+	"github.com/vadimi/grpc-ditto/internal/dittomock"
+	"github.com/vadimi/grpc-ditto/internal/fs"
+	"github.com/vadimi/grpc-ditto/internal/logger"
+	"github.com/vadimi/grpc-ditto/internal/services"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/jhump/protoreflect/desc"

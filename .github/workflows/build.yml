@@ -3,11 +3,21 @@ name: build
 on: [push]
 
 jobs:
+  configure:
+    runs-on: ubuntu-latest
+    outputs:
+      containerUser: ${{ steps.get-user.outputs.containerUser }}
+    
+    steps:
+      - id: get-user
+        run: echo "::set-output name=containerUser::`id -u`:`id -g`"
+
   build:
+    needs: configure
     runs-on: ubuntu-latest
     container:
       image: cimg/go:1.15
-      options: --user 1001
+      options: --user ${{ needs.configure.outputs.containerUser }}
 
     steps:
       - name: checkout code

@@ -107,6 +107,10 @@ jobs:
     runs-on: ubuntu-latest
     #if: startsWith(github.ref, 'refs/tags/v')
     if: startsWith(github.ref, 'refs/heads/feature/release')
+    strategy:
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64]
 
     steps:
       - name: download artifacts

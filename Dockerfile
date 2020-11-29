@@ -1,12 +1,6 @@
-FROM registry.videa.tv/alpine:3.9
+FROM alpine:3.12
 
 RUN apk add --no-cache ca-certificates
-
-ARG GIT_COMMIT=unknown
-ARG BUILD_NUMBER=unknown
-
-LABEL git-commit=$GIT_COMMIT \
-      build-number=$BUILD_NUMBER
 
 RUN mkdir /app
 

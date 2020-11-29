@@ -18,6 +18,8 @@ import (
 type mockingServiceImpl struct {
 	matcher *dittomock.RequestMatcher
 	log     logger.Logger
+
+	api.UnimplementedMockingServiceServer
 }
 
 func NewMockingService(matcher *dittomock.RequestMatcher, log logger.Logger) api.MockingServiceServer {

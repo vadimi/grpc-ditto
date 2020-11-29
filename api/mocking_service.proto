@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package grpcditto.proto;
+package grpcditto.api;
 
 import "google/protobuf/struct.proto";
 
-option go_package = "api";
-option csharp_namespace = "GrpcDitto.Proto";
+option go_package = ".;api";
+option csharp_namespace = "GrpcDitto.Api";
 
 service MockingService {
   // AddMock adds new mock to the server
@@ -31,7 +31,7 @@ message DittoMock {
 // If no matches are found the service will return ``Unimplemented`` grpc error.
 // If there multiple matches are found the first one is what gets returned, the other ones will be ignored.
 message DittoRequest {
-  // fully qualified grpc method like ``/videa.relyingparty.proto.types.RelyingPartyService/Delete``
+  // fully qualified grpc method like ``/package.full.name.UserService/Update``
   string method = 1;
 	repeated DittoBodyPattern body_patterns = 2;
 }

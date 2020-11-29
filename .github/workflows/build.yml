@@ -1,0 +1,16 @@
+name: build
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: cimg/go:1.15
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v2
+
+      - name: build
+        run: |
+          go build

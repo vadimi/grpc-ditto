@@ -69,7 +69,8 @@ jobs:
     name: release
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    #if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/heads/feature/release')
 
     steps:
       - name: download artifacts
@@ -80,7 +81,7 @@ jobs:
       - name: build docker image
         shell: bash
         run: |
-          docker build . -t grpc-ditto
+          docker build linux_amd64 -t grpc-ditto -f Dockerfile
 
       - name: Create Release
         id: create_release

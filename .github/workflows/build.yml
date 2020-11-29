@@ -5,7 +5,9 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: cimg/go:1.15
+    container:
+      image: cimg/go:1.15
+      options: --user 1001
 
     steps:
       - name: checkout code

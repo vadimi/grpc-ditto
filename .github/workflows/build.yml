@@ -69,7 +69,7 @@ jobs:
     name: release
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.event.release.tag_name, 'v')
+    if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
       - name: download artifacts
@@ -81,3 +81,16 @@ jobs:
         shell: bash
         run: |
           docker build . -t grpc-ditto
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            ${{ github.ref  }}
+          draft: false
+          prerelease: true

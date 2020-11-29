@@ -6,12 +6,15 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    container:
-      image: golang:1.15
+    # container:
+    #   image: golang:1.15
 
     steps:
       - name: checkout code
         uses: actions/checkout@v2
+
+      - name: checkout code
+        uses: actions/setup-go@v2
 
       - name: build
         run: |

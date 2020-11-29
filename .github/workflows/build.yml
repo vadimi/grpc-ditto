@@ -1,11 +1,24 @@
 name: build
 
-on: [push]
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+    tags:
+      - v*
 
 jobs:
 
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [386, amd64]
+        exclude:
+          - goos: darwin
+            goarch: 386
 
     steps:
       - name: checkout code
@@ -16,14 +29,27 @@ jobs:
         with:
           go-version: 1.15
 
+      - name: prepare dist directory
+        run: |
+          mkdir -p dist/
+          cp Dockerfile dist/
+
       - name: build
         env:
           CGO_ENABLED: 0
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
         run: |
-          go build -ldflags="-s -w"
+          go build -ldflags="-s -w" -o $GITHUB_WORKSPACE/dist
 
       - name: test
         run: |
           curl -L https://github.com/gotestyourself/gotestsum/releases/download/v0.6.0/gotestsum_0.6.0_linux_amd64.tar.gz | sudo tar -C /usr/local/bin -xz
           gotestsum --format short-verbose --no-summary=skipped ./...
 
+      - name: store artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: dist
+          path: |
+            dist

@@ -16,7 +16,7 @@ jobs:
     needs: configure
     runs-on: ubuntu-latest
     container:
-      image: cimg/go:1.15
+      image: golang:1.15
       options: --user ${{ needs.configure.outputs.containerUser }}
 
     steps:

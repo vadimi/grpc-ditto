@@ -71,8 +71,7 @@ jobs:
       release_url: ${{ steps.create_release.outputs.upload_url }}
     needs: build
     runs-on: ubuntu-latest
-    #if: startsWith(github.ref, 'refs/tags/v')
-    if: startsWith(github.ref, 'refs/heads/feature/release')
+    if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
       - name: download artifacts
@@ -102,8 +101,6 @@ jobs:
     name: upload-artifacts
     needs: release
     runs-on: ubuntu-latest
-    #if: startsWith(github.ref, 'refs/tags/v')
-    if: startsWith(github.ref, 'refs/heads/feature/release')
     strategy:
       matrix:
         goos: [linux, darwin, windows]
@@ -118,7 +115,7 @@ jobs:
       - name: create package
         id: package
         run: |
-          PACKAGE_NAME=grpc-ditto.${{ matrix.goos }}.${{ matrix.goarch }}.tar.gz
+          PACKAGE_NAME=grpc-ditto_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
           find ${{ matrix.goos }}_${{ matrix.goarch }} -printf "%P\n" -type f -o -type l -o -type d | \
             tar -czvf $PACKAGE_NAME -C ${{ matrix.goos }}_${{ matrix.goarch }} -T -
           echo ::set-output name=name::${PACKAGE_NAME}

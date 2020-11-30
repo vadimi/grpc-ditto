@@ -79,23 +79,35 @@ jobs:
         with:
           name: dist
 
-      - name: build docker image
-        shell: bash
-        run: |
-          docker build linux_amd64 -t grpc-ditto -f Dockerfile
-
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          release_name: ${{ github.ref }}
           body: |
-            ${{ github.ref  }}
+            ${GITHUB_REF#refs/tags/}
           draft: false
           prerelease: true
+
+      - name: login to github container registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.CR_PAT }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: linux_amd64
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ghcr.io/vadimi/grpc-ditto:latest
+            ghcr.io/vadimi/grpc-ditto:${GITHUB_REF#refs/tags/v}
 
   upload-artifacts:
     name: upload-artifacts

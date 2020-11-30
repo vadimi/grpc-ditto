@@ -3,7 +3,7 @@
 
 ## Usage example:
 
-`grpc-ditto --proto ~/dev/master-lock-svc/types --mocks jsonmocks`
+`grpc-ditto --proto myprotodir --mocks jsonmocksdir`
 
 this command will run a server on port `51000` by default, parse all proto files in `--proto` directory, load all mocks from json files in `--mocks` directory and also expose grpc reflection service.
 
@@ -18,36 +18,20 @@ this command will run a server on port `51000` by default, parse all proto files
 [
   {
     "request": {
-      "method": "/videa.masterlock.proto.types.MasterLockService/Lock",
+      "method": "/greet.Greeter/SayHello",
       "bodyPatterns": [
         {
-          "matchesJsonPath": {"expression": "$.name", "equals": "lock1"}
-        },
-        {
-          "matchesJsonPath": {"expression": "$.duration", "equals": "100"}
+          "matchesJsonPath": {"expression": "$.name", "eq": "Bob"}
         }
       ]
     },
     "response": {
-      "body": {"key": "key1"}
+      "body": {"message": "hello Bob"}
     }
   },
   {
     "request": {
-      "method": "/videa.masterlock.proto.types.MasterLockService/Lock",
-      "bodyPatterns": [
-        {
-          "equalToJson": {"name": "lock2", "duration": "200"}
-        }
-      ]
-    },
-    "response": {
-      "body": {"key": "key2"}
-    }
-  },
-  {
-    "request": {
-      "method": "/videa.masterlock.proto.types.MasterLockService/Lock",
+      "method": "/greet.Greeter/SayHello",
       "bodyPatterns": [
         {
           "matchesJsonPath": "$.name"
@@ -55,7 +39,7 @@ this command will run a server on port `51000` by default, parse all proto files
       ]
     },
     "response": {
-      "body": {"key": "key_all_non_empty"}
+      "body": {"message": "hello human"}
     }
   }
 ]

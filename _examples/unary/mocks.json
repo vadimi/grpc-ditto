@@ -1,0 +1,28 @@
+[
+  {
+    "request": {
+      "method": "/greet.Greeter/SayHello",
+      "bodyPatterns": [
+        {
+          "matchesJsonPath": {"expression": "$.name", "eq": "Bob"}
+        }
+      ]
+    },
+    "response": {
+      "body": {"message": "hello Bob"}
+    }
+  },
+  {
+    "request": {
+      "method": "/greet.Greeter/SayHello",
+      "bodyPatterns": [
+        {
+          "matchesJsonPath": "$.name"
+        }
+      ]
+    },
+    "response": {
+      "body": {"message": "hello human"}
+    }
+  }
+]

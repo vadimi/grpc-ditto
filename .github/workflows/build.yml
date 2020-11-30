@@ -79,9 +79,10 @@ jobs:
         with:
           name: dist
 
-      - name: prep tags
+      - name: prep
         id: prep
         run: |
+          find . -name "grpc-ditto*" -type f -exec chmod +x {} \;
           echo ::set-output name=tags::${GITHUB_REF#refs/tags/v}
 
       - name: create release
@@ -135,6 +136,7 @@ jobs:
       - name: create package
         id: package
         run: |
+          find . -name "grpc-ditto*" -type f -exec chmod +x {} \;
           PACKAGE_NAME=grpc-ditto_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
           find ${{ matrix.goos }}_${{ matrix.goarch }} -printf "%P\n" -type f -o -type l -o -type d | \
             tar -czvf $PACKAGE_NAME -C ${{ matrix.goos }}_${{ matrix.goarch }} -T -

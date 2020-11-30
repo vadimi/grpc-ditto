@@ -119,7 +119,8 @@ jobs:
         id: package
         run: |
           PACKAGE_NAME=grpc-ditto.${{ matrix.goos }}.${{ matrix.goarch }}.tar.gz
-          tar -czvf $PACKAGE_NAME -C ${{ matrix.goos }}_${{ matrix.goarch }} .
+          find ${{ matrix.goos }}_${{ matrix.goarch }} -printf "%P\n" -type f -o -type l -o -type d | \
+            tar -czvf $PACKAGE_NAME -C ${{ matrix.goos }}_${{ matrix.goarch }} -T -
           echo ::set-output name=name::${PACKAGE_NAME}
 
       - name: upload asset

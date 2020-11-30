@@ -79,7 +79,8 @@ jobs:
         with:
           name: dist
 
-      - id: prep tags
+      - name: prep tags
+        id: prep
         run: |
           echo ::set-output name=tags::${GITHUB_REF#refs/tags/v}
 

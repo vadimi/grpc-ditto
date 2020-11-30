@@ -1,10 +1,16 @@
 name: build
 
-on: [push]
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+    tags:
+      - v*
 
 jobs:
 
-  build:
+  test:
     runs-on: ubuntu-latest
 
     steps:
@@ -16,14 +22,132 @@ jobs:
         with:
           go-version: 1.15
 
-      - name: build
-        env:
-          CGO_ENABLED: 0
-        run: |
-          go build -ldflags="-s -w"
-
       - name: test
         run: |
           curl -L https://github.com/gotestyourself/gotestsum/releases/download/v0.6.0/gotestsum_0.6.0_linux_amd64.tar.gz | sudo tar -C /usr/local/bin -xz
           gotestsum --format short-verbose --no-summary=skipped ./...
 
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    strategy:
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64]
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v2
+
+      - name: setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.15
+
+      - name: prepare dist directory
+        run: |
+          mkdir -p dist/
+          cp Dockerfile dist/
+
+      - name: build
+        env:
+          CGO_ENABLED: 0
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          mkdir $GITHUB_WORKSPACE/dist/${{ matrix.goos }}_${{ matrix.goarch }}
+          go build -ldflags="-s -w" -o $GITHUB_WORKSPACE/dist/${{ matrix.goos }}_${{ matrix.goarch }}
+
+      - name: store artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: dist
+          path: |
+            dist
+
+  release:
+    name: release
+    outputs:
+      release_url: ${{ steps.create_release.outputs.upload_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: dist
+
+      - name: prep
+        id: prep
+        run: |
+          find . -name "grpc-ditto*" -type f -exec chmod +x {} \;
+          echo ::set-output name=tags::${GITHUB_REF#refs/tags/v}
+
+      - name: create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          body: |
+            v${{ steps.prep.outputs.tags }}
+          draft: false
+          prerelease: true
+
+      - name: set up docker buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: login to github container registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.CR_PAT }}
+
+      - name: build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: linux_amd64
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ghcr.io/vadimi/grpc-ditto:latest
+            ghcr.io/vadimi/grpc-ditto:${{ steps.prep.outputs.tags }}
+
+  upload-artifacts:
+    name: upload-artifacts
+    needs: release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64]
+
+    steps:
+      - name: download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: dist
+
+      - name: create package
+        id: package
+        run: |
+          find . -name "grpc-ditto*" -type f -exec chmod +x {} \;
+          PACKAGE_NAME=grpc-ditto_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz
+          find ${{ matrix.goos }}_${{ matrix.goarch }} -printf "%P\n" -type f -o -type l -o -type d | \
+            tar -czvf $PACKAGE_NAME -C ${{ matrix.goos }}_${{ matrix.goarch }} -T -
+          echo ::set-output name=name::${PACKAGE_NAME}
+
+      - name: upload asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url:  ${{ needs.release.outputs.release_url }}
+          asset_path: ./${{ steps.package.outputs.name }}
+          asset_name: ${{ steps.package.outputs.name }}
+          asset_content_type: application/gzip

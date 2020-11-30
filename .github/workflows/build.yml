@@ -79,7 +79,11 @@ jobs:
         with:
           name: dist
 
-      - name: Create Release
+      - id: prep tags
+        run: |
+          echo ::set-output name=tags::${GITHUB_REF#refs/tags/v}
+
+      - name: create release
         id: create_release
         uses: actions/create-release@v1
         env:
@@ -88,7 +92,7 @@ jobs:
           tag_name: ${{ github.ref }}
           release_name: ${{ github.ref }}
           body: |
-            ${GITHUB_REF#refs/tags/}
+            v${{ steps.prep.outputs.tags }}
           draft: false
           prerelease: true
 
@@ -99,7 +103,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.CR_PAT }}
 
-      - name: Build and push
+      - name: build and push
         uses: docker/build-push-action@v2
         with:
           context: linux_amd64
@@ -107,7 +111,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/vadimi/grpc-ditto:latest
-            ghcr.io/vadimi/grpc-ditto:${GITHUB_REF#refs/tags/v}
+            ghcr.io/vadimi/grpc-ditto:${{ steps.prep.outputs.tags }}
 
   upload-artifacts:
     name: upload-artifacts

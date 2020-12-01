@@ -174,7 +174,11 @@ func mockServerStreamHandler(srv interface{}, stream grpc.ServerStream) error {
 }
 
 func healthCheckFileDescriptor() (*desc.FileDescriptor, error) {
-	fileDesc, err := protoregistry.GlobalFiles.FindFileByPath("grpc/health/v1/health.proto")
+	return findFileDescriptor("grpc/health/v1/health.proto")
+}
+
+func findFileDescriptor(name string) (*desc.FileDescriptor, error) {
+	fileDesc, err := protoregistry.GlobalFiles.FindFileByPath(name)
 	if err != nil {
 		return nil, err
 	}

@@ -1,5 +1,9 @@
 #!/bin/bash
 cwd=$(dirname "$0")
+protopath="$1"
+if [[ "$protopath" == "" ]]; then
+    protopath="api"
+fi
 
 # macos doesn't have readlink installed by default, so we need to replicate it here
 # to get the real path that grpc tooling needs
@@ -44,4 +48,4 @@ GOBIN=$localbin go install google.golang.org/protobuf/cmd/protoc-gen-go
 
 GOOGLE_PROTO_DIR=$PROTOC_PATH/include/google/protobuf
 
-PATH=$PATH:$localbin $PROTOC_PATH/bin/protoc --go_out=$cwd/../api --go-grpc_out=$cwd/../api -I$GOOGLE_PROTO_DIR:"$cwd/../api" $cwd/../api/*.proto
+PATH=$PATH:$localbin $PROTOC_PATH/bin/protoc --go_out=$cwd/../$protopath --go-grpc_out=$cwd/../$protopath -I$GOOGLE_PROTO_DIR:"$cwd/../$protopath" $cwd/../$protopath/*.proto

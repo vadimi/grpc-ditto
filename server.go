@@ -1,25 +1,23 @@
 package main
 
 import (
-	"bytes"
-	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"strings"
 
 	"github.com/vadimi/grpc-ditto/internal/dittomock"
 	"github.com/vadimi/grpc-ditto/internal/logger"
 
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/dynamic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protodesc"
+	"google.golang.org/protobuf/reflect/protoregistry"
 
 	_ "google.golang.org/grpc/health/grpc_health_v1"
 )
@@ -53,23 +51,21 @@ func (s *mockServer) fileDescriptors() (map[string][]byte, error) {
 	return result, err
 }
 
-func (s *mockServer) processDescriptors(descrs []*desc.FileDescriptor, compressed map[string][]byte) error {
+func (s *mockServer) processDescriptors(descrs []*desc.FileDescriptor, result map[string][]byte) error {
 	for _, d := range descrs {
-		if _, ok := compressed[d.GetName()]; ok {
+		if _, ok := result[d.GetName()]; ok {
 			continue
 		}
 		fd := d.AsFileDescriptorProto()
-		fDescBytes, err := proto.Marshal(fd)
-		if err != nil {
-			return err
-		}
-		zipFd, err := compressBytes(fDescBytes)
-		if err != nil {
-			return err
-		}
-		compressed[fd.GetName()] = zipFd
 
-		err = s.processDescriptors(d.GetDependencies(), compressed)
+		fDescBytes, err := proto.MarshalOptions{}.Marshal(fd)
+		if err != nil {
+			return err
+		}
+
+		result[fd.GetName()] = fDescBytes
+
+		err = s.processDescriptors(d.GetDependencies(), result)
 		if err != nil {
 			return err
 		}
@@ -177,46 +173,13 @@ func mockServerStreamHandler(srv interface{}, stream grpc.ServerStream) error {
 	return nil
 }
 
-func compressBytes(src []byte) ([]byte, error) {
-	var buf bytes.Buffer
-	zw := gzip.NewWriter(&buf)
-	_, err := zw.Write(src)
-	if err != nil {
-		return nil, err
-	}
-	err = zw.Close()
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-func uncompressBytes(src []byte) ([]byte, error) {
-	var buf bytes.Buffer
-	zr, err := gzip.NewReader(bytes.NewReader(src))
-	if err != nil {
-		return nil, err
-	}
-	defer zr.Close()
-
-	_, err = io.Copy(&buf, zr)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
-}
-
 func healthCheckFileDescriptor() (*desc.FileDescriptor, error) {
-	fd := proto.FileDescriptor("grpc/health/v1/health.proto")
-	fdRaw, err := uncompressBytes(fd)
+	fileDesc, err := protoregistry.GlobalFiles.FindFileByPath("grpc/health/v1/health.proto")
 	if err != nil {
-		return nil, fmt.Errorf("uncompress health check descriptor: %w", err)
+		return nil, err
 	}
-	fdp := &descriptor.FileDescriptorProto{}
-	err = proto.Unmarshal(fdRaw, fdp)
-	if err != nil {
-		return nil, fmt.Errorf("proto unmarshal health check descriptor: %w", err)
-	}
-	return desc.CreateFileDescriptor(fdp)
+
+	fdproto := protodesc.ToFileDescriptorProto(fileDesc)
+
+	return desc.CreateFileDescriptor(fdproto)
 }

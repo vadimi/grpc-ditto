@@ -16,7 +16,6 @@ import (
 	"github.com/vadimi/grpc-ditto/internal/logger"
 	"github.com/vadimi/grpc-ditto/internal/services"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/urfave/cli"
@@ -25,6 +24,8 @@ import (
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/runtime/protoimpl"
 )
 
 func mockCmd(ctx *cli.Context) error {
@@ -69,7 +70,11 @@ func mockCmd(ctx *cli.Context) error {
 	// registering files is required to setup reflection service
 	for name, fd := range fileDescrs {
 		log.Infow("register mock file", "name", name)
-		proto.RegisterFile(name, fd)
+		_, err := protoregistry.GlobalFiles.FindFileByPath(name)
+		if err == protoregistry.NotFound {
+			// DescBuilder also registers files
+			protoimpl.DescBuilder{RawDescriptor: fd}.Build()
+		}
 	}
 
 	server := grpc.NewServer(grpc.UnknownServiceHandler(unknownHandler))
@@ -90,7 +95,7 @@ func mockCmd(ctx *cli.Context) error {
 	go func() {
 		sigs := make(chan os.Signal, 1)
 		signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
-		_ = <-sigs
+		<-sigs
 		server.GracefulStop()
 	}()
 
@@ -113,9 +118,7 @@ func parseProtoFiles(ctx *cli.Context) ([]*desc.FileDescriptor, error) {
 	}
 
 	// additional directories to look for dependencies
-	for _, d := range ctx.StringSlice("protoimports") {
-		protoDirs = append(protoDirs, d)
-	}
+	protoDirs = append(protoDirs, ctx.StringSlice("protoimports")...)
 
 	p := protoparse.Parser{
 		ImportPaths: protoDirs,
@@ -159,7 +162,7 @@ func healthCheckMocks() dittomock.DittoMock {
 		Request: &dittomock.DittoRequest{
 			Method: "/grpc.health.v1.Health/Check",
 			BodyPatterns: []dittomock.DittoBodyPattern{
-				dittomock.DittoBodyPattern{
+				{
 					EqualToJson: []byte("{}"),
 				},
 			},

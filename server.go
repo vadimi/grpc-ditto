@@ -193,14 +193,14 @@ func readInput(stream grpc.ServerStream, methodDesc *desc.MethodDescriptor) ([]b
 	}
 
 	var inputJS []byte
-	if len(inMessages) == 1 {
-		inputJS = inMessages[0]
-	} else if len(inMessages) > 1 {
+	if methodDesc.IsClientStreaming() {
 		res, err := json.Marshal(inMessages)
 		if err != nil {
 			return nil, err
 		}
 		inputJS = res
+	} else {
+		inputJS = inMessages[0]
 	}
 
 	return inputJS, nil

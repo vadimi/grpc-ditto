@@ -11,6 +11,7 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
+// Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
 // MockingServiceClient is the client API for MockingService service.
@@ -80,7 +81,7 @@ type UnsafeMockingServiceServer interface {
 }
 
 func RegisterMockingServiceServer(s grpc.ServiceRegistrar, srv MockingServiceServer) {
-	s.RegisterService(&_MockingService_serviceDesc, srv)
+	s.RegisterService(&MockingService_ServiceDesc, srv)
 }
 
 func _MockingService_AddMock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -119,7 +120,10 @@ func _MockingService_Clear_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
-var _MockingService_serviceDesc = grpc.ServiceDesc{
+// MockingService_ServiceDesc is the grpc.ServiceDesc for MockingService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var MockingService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "grpcditto.api.MockingService",
 	HandlerType: (*MockingServiceServer)(nil),
 	Methods: []grpc.MethodDesc{

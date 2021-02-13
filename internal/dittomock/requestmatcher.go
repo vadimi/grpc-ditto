@@ -51,7 +51,7 @@ type RequestMatcher struct {
 	rw        sync.RWMutex
 }
 
-func (rm *RequestMatcher) Match(method string, json []byte) (*DittoResponse, error) {
+func (rm *RequestMatcher) Match(method string, js []byte) (*DittoResponse, error) {
 	rm.rw.RLock()
 	defer rm.rw.RUnlock()
 
@@ -61,13 +61,14 @@ func (rm *RequestMatcher) Match(method string, json []byte) (*DittoResponse, err
 	}
 
 	for _, mock := range mocks {
-		res, err := rm.matches(json, mock.Request)
+		res, err := rm.matches(js, mock.Request)
 		if err != nil {
 			rm.logger.Warnw("matching error", "err", err)
 			continue
 		}
 
 		if res {
+			rm.logger.Debugw("match found", "expr", mock.Request.String())
 			return mock.Response, nil
 		}
 	}
@@ -210,26 +211,21 @@ func jsonPathMatcher(jsonSrc []byte, pattern *JSONPathWrapper) (bool, error) {
 		return result, errors.New("matching expressions cannot be empty")
 	}
 
-	for _, node := range nodes {
+	if isRegexp {
+		return regexpMatcher(patternVal, nodes)
+	}
 
+	for _, node := range nodes {
 		switch node.Type() {
 		case ajson.String:
 			strVal, _ := node.GetString()
-			if isRegexp {
-				re, err := regexp.Compile(patternVal)
-				if err != nil {
-					return result, err
-				}
-				result = re.MatchString(strVal)
-			} else {
-				result = strings.EqualFold(strVal, patternVal)
-			}
+			result = strings.EqualFold(strVal, patternVal)
 		case ajson.Numeric:
+			n, _ := node.GetNumeric()
 			floatVal, err := strconv.ParseFloat(patternVal, 64)
 			if err != nil {
 				return result, err
 			}
-			n, _ := node.GetNumeric()
 			result = (n == floatVal)
 		case ajson.Bool:
 			pbVal, err := strconv.ParseBool(patternVal)
@@ -247,6 +243,30 @@ func jsonPathMatcher(jsonSrc []byte, pattern *JSONPathWrapper) (bool, error) {
 		if !result {
 			break
 		}
+	}
+
+	return result, nil
+}
+
+func regexpMatcher(regexpExpr string, nodes []*ajson.Node) (bool, error) {
+	result := false
+	re, err := regexp.Compile(regexpExpr)
+	if err != nil {
+		return result, err
+	}
+	for _, node := range nodes {
+		strVal := ""
+		switch node.Type() {
+		case ajson.String:
+			strVal, _ = node.GetString()
+		default:
+			strVal = node.String()
+		}
+		result = re.MatchString(strVal)
+		if !result {
+			break
+		}
+		continue
 	}
 
 	return result, nil

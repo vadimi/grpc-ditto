@@ -11,6 +11,14 @@ type DittoRequest struct {
 	BodyPatterns []DittoBodyPattern `json:"bodyPatterns"`
 }
 
+func (dr *DittoRequest) String() string {
+	res, err := json.Marshal(dr)
+	if err != nil {
+		return ""
+	}
+	return string(res)
+}
+
 type DittoResponse struct {
 	Body       json.RawMessage
 	StatusCode codes.Code
@@ -22,15 +30,15 @@ type DittoMock struct {
 }
 
 type DittoBodyPattern struct {
-	EqualToJson     json.RawMessage  `json:"equalToJson"`
-	MatchesJsonPath *JSONPathWrapper `json:"matchesJsonPath"`
+	EqualToJson     json.RawMessage  `json:"equalToJson,omitempty"`
+	MatchesJsonPath *JSONPathWrapper `json:"matchesJsonPath,omitempty"`
 }
 
 type JSONPathMessage struct {
-	Expression string `json:"expression"`
-	Contains   string `json:"contains"`
-	Equals     string `json:"eq"`
-	Regexp     string `json:"regexp"`
+	Expression string `json:"expression,omitempty"`
+	Contains   string `json:"contains,omitempty"`
+	Equals     string `json:"eq,omitempty"`
+	Regexp     string `json:"regexp,omitempty"`
 }
 
 type JSONPathWrapper struct {

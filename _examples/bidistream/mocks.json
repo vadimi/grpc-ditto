@@ -23,7 +23,7 @@
       ]
     },
     "response": {
-        "body": [{"name": "begin and send"}]
+        "body": [{"name": "send"}, {"name": "send"}]
     }
   },
   {
@@ -51,7 +51,26 @@
       ]
     },
     "response": {
-        "body": [{"name": "begin, send, complete"}]
+        "body": [
+            {"name": "begin"},
+            {"name": "send"},
+            {"name": "complete"}
+        ]
+    }
+  },
+  {
+    "request": {
+      "method": "/ditto.example.BidiService/Hello",
+      "bodyPatterns": [
+        {
+          "matchesJsonPath": {"expression": "$.length", "regexp": "^[0-9]$"}
+        }
+      ]
+    },
+    "response": {
+        "body": [
+            {"name": "wssdfsdfsdf"}
+        ]
     }
   }
 ]

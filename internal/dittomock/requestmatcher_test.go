@@ -82,6 +82,7 @@ func TestSimpleJSONPathEqualsMatching(t *testing.T) {
 		equals string
 		src    string
 	}{
+		{"$[0].name", "tofu", `[{"name": "tofu"}]`},
 		{"$.name", "tofu", `{"name": "tofu"}`},
 		{"$.meal.name", "tofu", `{ "meal": {"name": "tofu"} }`},
 		{"$.meal[1].name", "tofu", `{ "meal": [{"name": "apple"},{"name": "tofu"}] }`},
@@ -114,7 +115,7 @@ func TestSimpleJSONPathEqualsMatching(t *testing.T) {
 		rm, _ := NewRequestMatcher(WithMocks(mocks))
 		mresp, err := rm.Match("test", []byte(test.src))
 		if err != nil {
-			t.Errorf("matching error not expected for expected result '%s', got %s", test.equals, err)
+			t.Errorf("matching error not expected for expected result '%s', got %s, expr: %s", test.equals, err, test.expr)
 			return
 		}
 

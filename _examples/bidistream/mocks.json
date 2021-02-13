@@ -1,0 +1,57 @@
+[
+  {
+    "request": {
+      "method": "/ditto.example.BidiService/Hello",
+      "bodyPatterns": [
+        {
+          "matchesJsonPath": {"expression": "$.begin", "eq": "{}"}
+        }
+      ]
+    },
+    "response": {
+        "body": [{"name": "begin"}]
+    }
+  },
+  {
+    "request": {
+      "method": "/ditto.example.BidiService/Hello",
+      "bodyPatterns": [
+        {
+          "matchesJsonPath": {"expression": "$[0].begin", "eq": "{}"},
+          "matchesJsonPath": {"expression": "$[1].send_item.name", "eq": "2"}
+        }
+      ]
+    },
+    "response": {
+        "body": [{"name": "begin and send"}]
+    }
+  },
+  {
+    "request": {
+      "method": "/ditto.example.BidiService/Hello",
+      "bodyPatterns": [
+        {
+          "matchesJsonPath": {"expression": "$.send_item.name", "eq": "3"}
+        }
+      ]
+    },
+    "response": {
+        "body": [{"name": "send only"}]
+    }
+  },
+  {
+    "request": {
+      "method": "/ditto.example.BidiService/Hello",
+      "bodyPatterns": [
+        {
+          "matchesJsonPath": {"expression": "$[0].begin", "eq": "{}"},
+          "matchesJsonPath": {"expression": "$[1].send_item.name", "eq": "4"},
+          "matchesJsonPath": {"expression": "$[2].complete", "eq": "{}"}
+        }
+      ]
+    },
+    "response": {
+        "body": [{"name": "begin, send, complete"}]
+    }
+  }
+]

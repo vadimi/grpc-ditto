@@ -10,7 +10,7 @@ func TestSimpleJSONMatching(t *testing.T) {
 		Request: &DittoRequest{
 			Method: "test",
 			BodyPatterns: []DittoBodyPattern{
-				DittoBodyPattern{
+				{
 					EqualToJson: []byte("{}"),
 				},
 			},
@@ -48,7 +48,7 @@ func TestRegexpMatch(t *testing.T) {
 			Request: &DittoRequest{
 				Method: "test",
 				BodyPatterns: []DittoBodyPattern{
-					DittoBodyPattern{
+					{
 						MatchesJsonPath: &JSONPathWrapper{
 							JSONPathMessage: JSONPathMessage{
 								Expression: test.expr,
@@ -82,6 +82,7 @@ func TestSimpleJSONPathEqualsMatching(t *testing.T) {
 		equals string
 		src    string
 	}{
+		{"$[0].name", "tofu", `[{"name": "tofu"}]`},
 		{"$.name", "tofu", `{"name": "tofu"}`},
 		{"$.meal.name", "tofu", `{ "meal": {"name": "tofu"} }`},
 		{"$.meal[1].name", "tofu", `{ "meal": [{"name": "apple"},{"name": "tofu"}] }`},
@@ -96,7 +97,7 @@ func TestSimpleJSONPathEqualsMatching(t *testing.T) {
 			Request: &DittoRequest{
 				Method: "test",
 				BodyPatterns: []DittoBodyPattern{
-					DittoBodyPattern{
+					{
 						MatchesJsonPath: &JSONPathWrapper{
 							JSONPathMessage: JSONPathMessage{
 								Expression: test.expr,
@@ -114,7 +115,7 @@ func TestSimpleJSONPathEqualsMatching(t *testing.T) {
 		rm, _ := NewRequestMatcher(WithMocks(mocks))
 		mresp, err := rm.Match("test", []byte(test.src))
 		if err != nil {
-			t.Errorf("matching error not expected for expected result '%s', got %s", test.equals, err)
+			t.Errorf("matching error not expected for expected result '%s', got %s, expr: %s", test.equals, err, test.expr)
 			return
 		}
 
@@ -131,14 +132,14 @@ func TestMultipleJSONPathMatching(t *testing.T) {
 	}{
 		{
 			[]JSONPathMessage{
-				JSONPathMessage{Expression: "$.name", Equals: "lock1"},
-				JSONPathMessage{Expression: "$.duration", Equals: "100"},
+				{Expression: "$.name", Equals: "lock1"},
+				{Expression: "$.duration", Equals: "100"},
 			}, `{"name": "lock1", "duration": 100}`,
 		},
 		{
 			[]JSONPathMessage{
-				JSONPathMessage{Expression: "$.name", Equals: "n1"},
-				JSONPathMessage{Expression: "$.station", Equals: `{"prop1": "val1", "name": "s1"}`},
+				{Expression: "$.name", Equals: "n1"},
+				{Expression: "$.station", Equals: `{"prop1": "val1", "name": "s1"}`},
 			}, `{"name": "n1", "station": {"name": "s1", "prop1": "val1"}}`,
 		},
 	}
@@ -188,7 +189,7 @@ func TestPartialJSONPathEqualsMatching(t *testing.T) {
 			Request: &DittoRequest{
 				Method: "test",
 				BodyPatterns: []DittoBodyPattern{
-					DittoBodyPattern{
+					{
 						MatchesJsonPath: &JSONPathWrapper{
 							JSONPathMessage: JSONPathMessage{
 								Expression: test.expr,

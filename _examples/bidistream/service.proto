@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package ditto.example;
+
+service BidiService {
+  rpc Hello(stream HelloRequest) returns (stream HelloResponse);
+}
+
+message HelloRequest {
+  oneof msg {
+    Begin begin = 1;
+    SendItem send_item = 2;
+    Complete complete = 3;
+  }
+}
+
+message HelloResponse {
+  string name = 1;
+}
+
+message Begin {
+}
+
+message SendItem {
+  string name = 1;
+}
+
+message Complete {
+}

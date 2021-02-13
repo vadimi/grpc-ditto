@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/vadimi/grpc-ditto/internal/dittomock"
@@ -116,19 +117,14 @@ func mockServerStreamHandler(srv interface{}, stream grpc.ServerStream) error {
 		return status.Errorf(codes.Unimplemented, "unimplemented mock for method: %s", fullMethodName)
 	}
 
-	in := dynamic.NewMessage(methodDesc.GetInputType())
-
-	if err := stream.RecvMsg(in); err != nil {
+	inputJS, err := readInput(stream, methodDesc)
+	if err != nil {
+		mockSrv.logger.Error(fmt.Errorf("input message json marshaling: %w", err))
 		return err
 	}
 
-	js, err := in.MarshalJSONPB(&jsonpb.Marshaler{OrigName: true})
-	if err != nil {
-		mockSrv.logger.Error(fmt.Errorf("input message json marshaling: %w", err))
-		return status.Errorf(codes.Unknown, "input message json marshaling: %s", err)
-	}
-	mockSrv.logger.Debugw("matching request", "req", string(js))
-	respMock, err := mockSrv.matcher.Match(fullMethodName, js)
+	mockSrv.logger.Debugw("matching request", "req", string(inputJS))
+	respMock, err := mockSrv.matcher.Match(fullMethodName, inputJS)
 	if err != nil {
 		if errors.Is(err, dittomock.ErrNotMatched) {
 			mockSrv.logger.Warn("no match found")
@@ -173,8 +169,49 @@ func mockServerStreamHandler(srv interface{}, stream grpc.ServerStream) error {
 	return nil
 }
 
+func readInput(stream grpc.ServerStream, methodDesc *desc.MethodDescriptor) ([]byte, error) {
+	// for loop supports both client streaming and unary messages
+	// io.EOF means it's the last message on the stream
+	var inMessages []json.RawMessage
+	for {
+		in := dynamic.NewMessage(methodDesc.GetInputType())
+
+		err := stream.RecvMsg(in)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return nil, err
+		}
+
+		js, err := in.MarshalJSONPB(&jsonpb.Marshaler{OrigName: true})
+		if err != nil {
+			return nil, status.Errorf(codes.Unknown, "input message json marshaling: %s", err)
+		}
+
+		inMessages = append(inMessages, js)
+	}
+
+	var inputJS []byte
+	if len(inMessages) == 1 {
+		inputJS = inMessages[0]
+	} else if len(inMessages) > 1 {
+		res, err := json.Marshal(inMessages)
+		if err != nil {
+			return nil, err
+		}
+		inputJS = res
+	}
+
+	return inputJS, nil
+}
+
 func healthCheckFileDescriptor() (*desc.FileDescriptor, error) {
-	fileDesc, err := protoregistry.GlobalFiles.FindFileByPath("grpc/health/v1/health.proto")
+	return findFileDescriptor("grpc/health/v1/health.proto")
+}
+
+func findFileDescriptor(name string) (*desc.FileDescriptor, error) {
+	fileDesc, err := protoregistry.GlobalFiles.FindFileByPath(name)
 	if err != nil {
 		return nil, err
 	}

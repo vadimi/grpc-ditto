@@ -1,4 +1,4 @@
-# Unary call mock
+# Bidi streaming call mock
 
 Run mocking server using docker:
 
@@ -7,3 +7,4 @@ Run mocking server using docker:
 Run mocking server using standalone app:
 
 `grpc-ditto --proto . --mocks .`
+

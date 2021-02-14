@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
+	"time"
 
 	"github.com/vadimi/grpc-ditto/api"
 	"github.com/vadimi/grpc-ditto/internal/dittomock"
@@ -26,6 +27,10 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/runtime/protoimpl"
+)
+
+const (
+	maxShutdownTime = 30 * time.Second
 )
 
 func newMockCmd(log logger.Logger) func(ctx *cli.Context) error {
@@ -96,6 +101,12 @@ func newMockCmd(log logger.Logger) func(ctx *cli.Context) error {
 			sigs := make(chan os.Signal, 1)
 			signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
 			<-sigs
+			log.Info("stopping service")
+			timer := time.AfterFunc(maxShutdownTime, func() {
+				log.Info("force stop gRPC server")
+				server.Stop()
+			})
+			defer timer.Stop()
 			server.GracefulStop()
 		}()
 

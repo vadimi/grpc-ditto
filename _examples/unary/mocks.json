@@ -4,12 +4,12 @@
       "method": "/greet.Greeter/SayHello",
       "bodyPatterns": [
         {
-          "matchesJsonPath": {"expression": "$.name", "eq": "Bob"}
+          "matchesJsonPath": { "expression": "$.name", "eq": "Bob" }
         }
       ]
     },
     "response": {
-      "body": {"message": "hello Bob"}
+      "body": { "message": "hello Bob" }
     }
   },
   {
@@ -22,7 +22,7 @@
       ]
     },
     "response": {
-      "body": {"message": "hello human"}
+      "body": { "message": "hello human" }
     }
   }
 ]

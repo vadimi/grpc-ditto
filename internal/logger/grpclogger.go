@@ -7,8 +7,7 @@ import (
 
 const (
 	// internal grpc transport logger logs at verbosity level 2
-	// so we need to lower that a bit to avoid showing grpc errors after health check
-	verbosityLevel = 1
+	verbosityLevel = 2
 )
 
 type grpcLogger struct {
@@ -16,9 +15,15 @@ type grpcLogger struct {
 }
 
 // NewGrpcLogger creates new instance of grpc LoggerV2
-func NewGrpcLogger(level string) grpclog.LoggerV2 {
+func NewGrpcLogger(baseLog Logger, level string) grpclog.LoggerV2 {
+	logcore := baseLog.zapcore()
+	if logcore == nil {
+		panic("please initialize main logger")
+	}
+	lvl := parseLevel(level).Level()
+	l := logcore.WithOptions(zap.IncreaseLevel(lvl)).Sugar()
 	return &grpcLogger{
-		l: createWrappedLogger(level),
+		l: l,
 	}
 }
 

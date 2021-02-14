@@ -28,83 +28,84 @@ import (
 	"google.golang.org/protobuf/runtime/protoimpl"
 )
 
-func mockCmd(ctx *cli.Context) error {
-	log := logger.NewLogger()
-	grpclog.SetLoggerV2(logger.NewGrpcLogger("error"))
+func newMockCmd(log logger.Logger) func(ctx *cli.Context) error {
+	return func(ctx *cli.Context) error {
+		grpclog.SetLoggerV2(logger.NewGrpcLogger(log, "error"))
 
-	descrs, err := parseProtoFiles(ctx)
-	if err != nil {
-		return err
-	}
-
-	mocksPath := ctx.String("mocks")
-	log.Infow("loading mocks", "path", mocksPath)
-	requestMatcher, err := dittomock.NewRequestMatcher(
-		dittomock.WithMocksPath(mocksPath),
-		dittomock.WithLogger(log),
-	)
-	if err != nil {
-		return err
-	}
-
-	// health check service
-	// implement it using mocks to allow using/overriding health mocks for other purposes
-	healthcheckDescr, err := healthCheckFileDescriptor()
-	if err != nil {
-		return err
-	}
-	descrs = append(descrs, healthcheckDescr)
-	requestMatcher.AddMock(healthCheckMocks())
-
-	mockServer := &mockServer{
-		descrs:  descrs,
-		logger:  log,
-		matcher: requestMatcher,
-	}
-
-	fileDescrs, err := mockServer.fileDescriptors()
-	if err != nil {
-		return fmt.Errorf("cannot parse file descriptors: %w", err)
-	}
-
-	// registering files is required to setup reflection service
-	for name, fd := range fileDescrs {
-		log.Infow("register mock file", "name", name)
-		_, err := protoregistry.GlobalFiles.FindFileByPath(name)
-		if err == protoregistry.NotFound {
-			// DescBuilder also registers files
-			protoimpl.DescBuilder{RawDescriptor: fd}.Build()
+		descrs, err := parseProtoFiles(ctx)
+		if err != nil {
+			return err
 		}
+
+		mocksPath := ctx.String("mocks")
+		log.Infow("loading mocks", "path", mocksPath)
+		requestMatcher, err := dittomock.NewRequestMatcher(
+			dittomock.WithMocksPath(mocksPath),
+			dittomock.WithLogger(log),
+		)
+		if err != nil {
+			return err
+		}
+
+		// health check service
+		// implement it using mocks to allow using/overriding health mocks for other purposes
+		healthcheckDescr, err := healthCheckFileDescriptor()
+		if err != nil {
+			return err
+		}
+		descrs = append(descrs, healthcheckDescr)
+		requestMatcher.AddMock(healthCheckMocks())
+
+		mockServer := &mockServer{
+			descrs:  descrs,
+			logger:  log,
+			matcher: requestMatcher,
+		}
+
+		fileDescrs, err := mockServer.fileDescriptors()
+		if err != nil {
+			return fmt.Errorf("cannot parse file descriptors: %w", err)
+		}
+
+		// registering files is required to setup reflection service
+		for name, fd := range fileDescrs {
+			log.Infow("register mock file", "name", name)
+			_, err := protoregistry.GlobalFiles.FindFileByPath(name)
+			if err == protoregistry.NotFound {
+				// DescBuilder also registers files
+				protoimpl.DescBuilder{RawDescriptor: fd}.Build()
+			}
+		}
+
+		server := grpc.NewServer(grpc.UnknownServiceHandler(unknownHandler))
+		for _, mockService := range mockServer.serviceDescriptors() {
+			log.Infow("register mock service", "service", mockService.ServiceName)
+			server.RegisterService(mockService, mockServer)
+		}
+
+		api.RegisterMockingServiceServer(server, services.NewMockingService(requestMatcher, log))
+
+		reflection.Register(server)
+
+		port := ctx.Int("port")
+		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+		if err != nil {
+			return err
+		}
+		go func() {
+			sigs := make(chan os.Signal, 1)
+			signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
+			<-sigs
+			server.GracefulStop()
+		}()
+
+		log.Infow("start server", "port", port)
+		if err := server.Serve(lis); err != nil {
+			return err
+		}
+
+		return nil
 	}
-
-	server := grpc.NewServer(grpc.UnknownServiceHandler(unknownHandler))
-	for _, mockService := range mockServer.serviceDescriptors() {
-		log.Infow("register mock service", "service", mockService.ServiceName)
-		server.RegisterService(mockService, mockServer)
-	}
-
-	api.RegisterMockingServiceServer(server, services.NewMockingService(requestMatcher, log))
-
-	reflection.Register(server)
-
-	port := ctx.Int("port")
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-	if err != nil {
-		return err
-	}
-	go func() {
-		sigs := make(chan os.Signal, 1)
-		signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
-		<-sigs
-		server.GracefulStop()
-	}()
-
-	log.Infow("start server", "port", port)
-	if err := server.Serve(lis); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func parseProtoFiles(ctx *cli.Context) ([]*desc.FileDescriptor, error) {

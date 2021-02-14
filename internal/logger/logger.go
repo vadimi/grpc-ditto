@@ -17,13 +17,28 @@ type Logger interface {
 	Warnw(msg string, keysAndValues ...interface{})
 	WithMap(m map[string]string) Logger
 	Fatal(val interface{})
+
+	zapcore() *zap.Logger
 }
 
 type loggerOpts struct {
-	ctx map[string]string
+	encoding string
+	level    string
 }
 
 type LoggerOption func(opt *loggerOpts)
+
+func WithLevel(level string) LoggerOption {
+	return func(opt *loggerOpts) {
+		opt.level = level
+	}
+}
+
+func WithEncoding(encoding string) LoggerOption {
+	return func(opt *loggerOpts) {
+		opt.encoding = encoding
+	}
+}
 
 func NewLogger(opts ...LoggerOption) Logger {
 	lo := &loggerOpts{}
@@ -32,15 +47,17 @@ func NewLogger(opts ...LoggerOption) Logger {
 		opt(lo)
 	}
 
-	fields := []interface{}{}
+	logger := createLogger(lo.level, lo.encoding)
 
 	return &loggerImpl{
-		log: logger.With(fields...),
+		logcore: logger,
+		log:     logger.Sugar(),
 	}
 }
 
 type loggerImpl struct {
-	log *zap.SugaredLogger
+	logcore *zap.Logger
+	log     *zap.SugaredLogger
 }
 
 func (l *loggerImpl) WithMap(m map[string]string) Logger {
@@ -98,6 +115,10 @@ func (l *loggerImpl) Warnw(msg string, keysAndValues ...interface{}) {
 
 func (l *loggerImpl) Fatal(val interface{}) {
 	l.log.Fatal(val)
+}
+
+func (l *loggerImpl) zapcore() *zap.Logger {
+	return l.logcore
 }
 
 func map2fields(m map[string]string) []interface{} {

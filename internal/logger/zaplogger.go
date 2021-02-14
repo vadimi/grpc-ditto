@@ -1,57 +1,33 @@
 package logger
 
 import (
-	"os"
-	"time"
+	"strings"
 
-	zaplogfmt "github.com/jsternberg/zap-logfmt"
+	_ "github.com/jsternberg/zap-logfmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-var logger *zap.SugaredLogger
-var logcore *zap.Logger
-
-func init() {
-	logcore = createLogger("info")
-	logger = logcore.Sugar()
-}
-
-// Init initializes logger with specified level
-func Init(logLevel string) {
-	config := zap.NewProductionEncoderConfig()
-	config.TimeKey = "time"
-	config.EncodeTime = rfc3339NanoTimeEncoder
-	logcore = createLogger(logLevel)
-	logger = logcore.Sugar()
-}
-
-func createLogger(level string) *zap.Logger {
-	config := zap.NewProductionEncoderConfig()
-	config.TimeKey = "time"
-	config.EncodeTime = rfc3339NanoTimeEncoder
-	return zap.New(zapcore.NewCore(
-		zaplogfmt.NewEncoder(config),
-		os.Stdout,
-		parseLevel(level),
-	))
-}
-
-func rfc3339NanoTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-	enc.AppendString(t.Format(time.RFC3339Nano))
-}
-
-func parseLevel(level string) zapcore.Level {
-	var l zapcore.Level
-	if err := l.UnmarshalText([]byte(level)); err != nil {
-		return zapcore.InfoLevel
+func createLogger(level, encoding string) *zap.Logger {
+	zc := zap.NewProductionConfig()
+	zc.Encoding = "logfmt"
+	if strings.EqualFold(encoding, "json") {
+		zc.Encoding = "json"
 	}
-
+	zc.DisableCaller = true
+	zc.EncoderConfig.TimeKey = "time"
+	zc.EncoderConfig.EncodeTime = zapcore.RFC3339NanoTimeEncoder
+	zc.OutputPaths = []string{"stdout"}
+	zc.Level = parseLevel(level)
+	l, _ := zc.Build()
 	return l
 }
 
-func Close() {
-	if logger != nil {
-		defer logger.Sync()
+func parseLevel(level string) zap.AtomicLevel {
+	var l zapcore.Level
+	if err := l.UnmarshalText([]byte(level)); err != nil {
+		return zap.NewAtomicLevelAt(zapcore.InfoLevel)
 	}
+
+	return zap.NewAtomicLevelAt(l)
 }

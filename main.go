@@ -9,8 +9,7 @@ import (
 )
 
 func main() {
-	logger.Init("debug")
-	log := logger.NewLogger()
+	log := logger.NewLogger(logger.WithLevel("debug"))
 
 	app := cli.NewApp()
 	app.Version = "1.0.0"
@@ -38,7 +37,7 @@ func main() {
 			Value:    51000,
 		},
 	}
-	app.Action = mockCmd
+	app.Action = newMockCmd(log)
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)

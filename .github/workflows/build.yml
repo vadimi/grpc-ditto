@@ -48,7 +48,7 @@ jobs:
         uses: goreleaser/goreleaser-action@master
         with:
           version: latest
-          args: --skip-publish --skip-validate
+          args: --skip-publish --skip-validate --snapshot
 
       - name: cleanup dist directory
         run: |

@@ -23,7 +23,8 @@ jobs:
 
       - name: test
         run: |
-          curl -L https://github.com/gotestyourself/gotestsum/releases/download/v0.6.0/gotestsum_0.6.0_linux_amd64.tar.gz | sudo tar -C /usr/local/bin -xz
+          export GOTESTSUM_VERSION=1.6.1
+          curl -L https://github.com/gotestyourself/gotestsum/releases/download/v${GOTESTSUM_VERSION}/gotestsum_${GOTESTSUM_VERSION}_linux_amd64.tar.gz | sudo tar -C /usr/local/bin -xz
           gotestsum --format short-verbose --no-summary=skipped ./...
 
   build:

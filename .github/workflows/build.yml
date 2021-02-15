@@ -47,7 +47,6 @@ jobs:
 
       - name: prepare dist directory
         run: |
-          find ./dist/ -not -name '*.tar.gz' -not -name '*.zip' -not -name 'dist' -delete
           cp Dockerfile dist/
 
       - name: store artifacts
@@ -103,7 +102,7 @@ jobs:
       - name: build and push
         uses: docker/build-push-action@v2
         with:
-          context: linux_amd64
+          context: grpc-ditto_linux_amd64
           file: ./Dockerfile
           push: true
           tags: |
@@ -125,7 +124,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: dist/grpc-ditto*
+          file: dist/pkg/grpc-ditto*
           tag: ${{ github.ref }}
           overwrite: true
           file_glob: true

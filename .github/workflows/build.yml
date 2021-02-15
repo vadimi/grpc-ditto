@@ -39,20 +39,16 @@ jobs:
         with:
           go-version: 1.15
 
-      - name: prepare dist directory
-        run: |
-          mkdir -p dist/
-          cp Dockerfile dist/
-
       - name: build
         uses: goreleaser/goreleaser-action@master
         with:
           version: latest
           args: --skip-publish --skip-validate --snapshot
 
-      - name: cleanup dist directory
+      - name: prepare dist directory
         run: |
           find ./dist/ -not -name '*.tar.gz' -not -name '*.zip' -not -name 'dist' -delete
+          cp Dockerfile dist/
 
       - name: store artifacts
         uses: actions/upload-artifact@v2

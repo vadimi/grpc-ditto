@@ -47,6 +47,7 @@ jobs:
 
       - name: prepare dist directory
         run: |
+          find ./dist/ -not -name '*.tar.gz' -not -name '*.zip' -not -name 'dist' -not -name 'grpc-ditto_linux_amd64' -not -name 'pkg' -delete
           cp Dockerfile dist/
 
       - name: store artifacts

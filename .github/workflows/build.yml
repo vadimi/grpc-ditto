@@ -9,7 +9,7 @@ on:
       - v*
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,19 +26,6 @@ jobs:
           export GOTESTSUM_VERSION=1.6.1
           curl -L https://github.com/gotestyourself/gotestsum/releases/download/v${GOTESTSUM_VERSION}/gotestsum_${GOTESTSUM_VERSION}_linux_amd64.tar.gz | sudo tar -C /usr/local/bin -xz
           gotestsum --format short-verbose --no-summary=skipped ./...
-
-  build:
-    runs-on: ubuntu-latest
-    needs: test
-
-    steps:
-      - name: checkout code
-        uses: actions/checkout@v2
-
-      - name: setup go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.15
 
       - name: build
         uses: goreleaser/goreleaser-action@master

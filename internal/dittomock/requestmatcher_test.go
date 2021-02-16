@@ -1,8 +1,10 @@
 package dittomock
 
 import (
-	"bytes"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSimpleJSONMatching(t *testing.T) {
@@ -15,21 +17,19 @@ func TestSimpleJSONMatching(t *testing.T) {
 				},
 			},
 		},
-		Response: &DittoResponse{
-			Body: []byte("ok"),
+		Response: []*DittoResponse{
+			{
+				Body: []byte("ok"),
+			},
 		},
 	}
 	mocks := []DittoMock{m1}
 	rm, _ := NewRequestMatcher(WithMocks(mocks))
 	mresp, err := rm.Match("test", []byte("{}"))
-	if err != nil {
-		t.Errorf("matching error not expected, got %w", err)
-		return
-	}
 
-	if mresp == nil || !bytes.Equal([]byte("ok"), mresp.Body) {
-		t.Errorf("Expected 'ok', got: %s", mresp.Body)
-	}
+	require.NoError(t, err)
+	require.NotNil(t, mresp)
+	assert.Equal(t, []byte("ok"), []byte(mresp.Response[0].Body))
 }
 
 func TestRegexpMatch(t *testing.T) {
@@ -58,21 +58,19 @@ func TestRegexpMatch(t *testing.T) {
 					},
 				},
 			},
-			Response: &DittoResponse{
-				Body: []byte("ok"),
+			Response: []*DittoResponse{
+				{
+					Body: []byte("ok"),
+				},
 			},
 		}
 		mocks := []DittoMock{m1}
 		rm, _ := NewRequestMatcher(WithMocks(mocks))
 		mresp, err := rm.Match("test", []byte(test.src))
-		if err != nil {
-			t.Errorf("matching error not expected for expected result '%s', got %s", test.regexpMatch, err)
-			return
-		}
 
-		if mresp == nil || !bytes.Equal([]byte("ok"), mresp.Body) {
-			t.Errorf("Expected 'ok', got: %s", mresp.Body)
-		}
+		require.NoError(t, err)
+		require.NotNil(t, mresp)
+		assert.Equal(t, []byte("ok"), []byte(mresp.Response[0].Body))
 	}
 }
 
@@ -107,21 +105,19 @@ func TestSimpleJSONPathEqualsMatching(t *testing.T) {
 					},
 				},
 			},
-			Response: &DittoResponse{
-				Body: []byte("ok"),
+			Response: []*DittoResponse{
+				{
+					Body: []byte("ok"),
+				},
 			},
 		}
 		mocks := []DittoMock{m1}
 		rm, _ := NewRequestMatcher(WithMocks(mocks))
 		mresp, err := rm.Match("test", []byte(test.src))
-		if err != nil {
-			t.Errorf("matching error not expected for expected result '%s', got %s, expr: %s", test.equals, err, test.expr)
-			return
-		}
 
-		if mresp == nil || !bytes.Equal([]byte("ok"), mresp.Body) {
-			t.Errorf("Expected 'ok', got: %s", mresp.Body)
-		}
+		require.NoError(t, err)
+		require.NotNil(t, mresp)
+		assert.Equal(t, []byte("ok"), []byte(mresp.Response[0].Body))
 	}
 }
 
@@ -156,21 +152,19 @@ func TestMultipleJSONPathMatching(t *testing.T) {
 				Method:       "test",
 				BodyPatterns: patterns,
 			},
-			Response: &DittoResponse{
-				Body: []byte("ok"),
+			Response: []*DittoResponse{
+				{
+					Body: []byte("ok"),
+				},
 			},
 		}
 		mocks := []DittoMock{m1}
 		rm, _ := NewRequestMatcher(WithMocks(mocks))
 		mresp, err := rm.Match("test", []byte(test.src))
-		if err != nil {
-			t.Errorf("matching error not expected, got %s", err)
-			return
-		}
 
-		if mresp == nil || !bytes.Equal([]byte("ok"), mresp.Body) {
-			t.Errorf("Expected 'ok', got: %s", mresp.Body)
-		}
+		require.NoError(t, err)
+		require.NotNil(t, mresp)
+		assert.Equal(t, []byte("ok"), []byte(mresp.Response[0].Body))
 	}
 }
 
@@ -199,20 +193,18 @@ func TestPartialJSONPathEqualsMatching(t *testing.T) {
 					},
 				},
 			},
-			Response: &DittoResponse{
-				Body: []byte("ok"),
+			Response: []*DittoResponse{
+				{
+					Body: []byte("ok"),
+				},
 			},
 		}
 		mocks := []DittoMock{m1}
 		rm, _ := NewRequestMatcher(WithMocks(mocks))
-		mresp, err := rm.Match("test", []byte(test.src))
-		if err != nil {
-			t.Errorf("matching error not expected for expression '%s', got %s", test.expr, err)
-			return
-		}
+		mock, err := rm.Match("test", []byte(test.src))
 
-		if mresp == nil || !bytes.Equal([]byte("ok"), mresp.Body) {
-			t.Errorf("Expected 'ok', got: %s", mresp.Body)
-		}
+		require.NoError(t, err)
+		require.NotNil(t, mock)
+		assert.Equal(t, []byte("ok"), []byte(mock.Response[0].Body))
 	}
 }

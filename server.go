@@ -124,7 +124,7 @@ func mockServerStreamHandler(srv interface{}, stream grpc.ServerStream) error {
 	}
 
 	mockSrv.logger.Debugw("matching request", "req", string(inputJS))
-	respMock, err := mockSrv.matcher.Match(fullMethodName, inputJS)
+	mock, err := mockSrv.matcher.Match(fullMethodName, inputJS)
 	if err != nil {
 		if errors.Is(err, dittomock.ErrNotMatched) {
 			mockSrv.logger.Warn("no match found")
@@ -134,30 +134,27 @@ func mockServerStreamHandler(srv interface{}, stream grpc.ServerStream) error {
 		return status.Errorf(codes.Unimplemented, "unimplemented mock for method: %s", fullMethodName)
 	}
 
-	if respMock.Status != nil {
-		return status.Error(respMock.Status.Code, respMock.Status.Message)
-	}
+	// if methodDesc.IsServerStreaming() {
+	// 	if respMock.Body[0] != '[' {
+	// 		err := fmt.Errorf("server streaming method requires array in response body: %s", fullMethodName)
+	// 		mockSrv.logger.Error(err)
+	// 		return status.Error(codes.Unimplemented, err.Error())
+	// 	}
 
-	output := dynamic.NewMessage(methodDesc.GetOutputType())
+	// 	var arr []json.RawMessage
+	// 	if err := json.Unmarshal(respMock.Body, &arr); err != nil {
+	// 		return status.Errorf(codes.Unknown, "output message json unmarshaling: %s", err)
+	// 	}
+	// 	outputMessages = arr
+	// }
 
-	outputMessages := []json.RawMessage{respMock.Body}
-
-	if methodDesc.IsServerStreaming() {
-		if respMock.Body[0] != '[' {
-			err := fmt.Errorf("server streaming method requires array in response body: %s", fullMethodName)
-			mockSrv.logger.Error(err)
-			return status.Error(codes.Unimplemented, err.Error())
+	for _, resp := range mock.Response {
+		if resp.Status != nil {
+			return status.Error(resp.Status.Code, resp.Status.Message)
 		}
 
-		var arr []json.RawMessage
-		if err := json.Unmarshal(respMock.Body, &arr); err != nil {
-			return status.Errorf(codes.Unknown, "output message json unmarshaling: %s", err)
-		}
-		outputMessages = arr
-	}
-
-	for _, msg := range outputMessages {
-		err = output.UnmarshalJSON(msg)
+		output := dynamic.NewMessage(methodDesc.GetOutputType())
+		err = output.UnmarshalJSON(resp.Body)
 		if err != nil {
 			mockSrv.logger.Error(err)
 			return err

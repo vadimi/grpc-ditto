@@ -179,8 +179,10 @@ func healthCheckMocks() dittomock.DittoMock {
 				},
 			},
 		},
-		Response: &dittomock.DittoResponse{
-			Body: []byte(`{ "status": "SERVING" }`),
+		Response: []*dittomock.DittoResponse{
+			{
+				Body: []byte(`{ "status": "SERVING" }`),
+			},
 		},
 	}
 }

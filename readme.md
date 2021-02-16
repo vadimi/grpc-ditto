@@ -1,4 +1,5 @@
 # Overview
+
 `grpc-ditto` is grpc mocking server that can mock any grpc services by parsing corresponding proto file.
 
 ## Usage example:
@@ -10,37 +11,42 @@ this command will run a server on port `51000` by default, parse all proto files
 ### Mock format
 
 - `method` is fully qualified grpc service method name
-- `matchesJsonPath` supports JSONPath spec: https://goessner.net/articles/JsonPath/
-- `equalToJson` supports protobuf specific json format: https://developers.google.com/protocol-buffers/docs/proto3#json
-- multiple `bodyPatterns` should all match in order for a request to match
+- `matches_jsonpath` supports JSONPath spec: https://goessner.net/articles/JsonPath/
+- `equal_to_json` supports protobuf specific json format: https://developers.google.com/protocol-buffers/docs/proto3#json
+- multiple `body_patterns` should all match in order for a request to match
 
 ```json
 [
   {
     "request": {
       "method": "/greet.Greeter/SayHello",
-      "bodyPatterns": [
+      "body_patterns": [
         {
-          "matchesJsonPath": {"expression": "$.name", "eq": "Bob"}
+          "matches_jsonpath": { "expression": "$.name", "eq": "Bob" }
         }
       ]
     },
     "response": {
-      "body": {"message": "hello Bob"}
+      "body": { "message": "hello Bob" }
     }
   },
   {
     "request": {
       "method": "/greet.Greeter/SayHello",
-      "bodyPatterns": [
+      "body_patterns": [
         {
-          "matchesJsonPath": "$.name"
+          "matches_jsonpath": { "expression": "$.name", "eq": "John" }
         }
       ]
     },
-    "response": {
-      "body": {"message": "hello human"}
-    }
+    "response": [
+      {
+        "status": {
+          "code": "NOT_FOUND",
+          "message": "user not found"
+        }
+      }
+    ]
   }
 ]
-````
+```

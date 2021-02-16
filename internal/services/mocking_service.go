@@ -3,7 +3,6 @@ package services
 import (
 	"bytes"
 	"context"
-	"fmt"
 
 	"github.com/vadimi/grpc-ditto/api"
 	"github.com/vadimi/grpc-ditto/internal/dittomock"
@@ -66,57 +65,7 @@ func (s *mockingServiceImpl) AddMock(ctx context.Context, req *api.AddMockReques
 }
 
 func dittoMock(req *api.AddMockRequest) (dittomock.DittoMock, error) {
-	m := dittomock.DittoMock{
-		Response: &dittomock.DittoResponse{},
-	}
-
-	var respBody []byte
-	var err error
-	if req.Mock.Response != nil {
-		switch req.Mock.Response.GetResponse().(type) {
-		case *api.DittoResponse_Body:
-			respBody, err = structToBytes(req.Mock.Response.GetBody())
-			if err != nil {
-				return m, fmt.Errorf("structToBytes: %w", err)
-			}
-
-			if len(respBody) == 0 {
-				respBody = []byte("{}")
-			}
-
-			m.Response.Body = respBody
-		case *api.DittoResponse_Status:
-			status := req.Mock.Response.GetStatus()
-			m.Response.Status = &dittomock.RpcStatus{
-				Code:    codes.Code(status.GetCode()),
-				Message: status.GetMessage(),
-			}
-		}
-	}
-
-	m.Request = &dittomock.DittoRequest{
-		Method:       req.Mock.Request.GetMethod(),
-		BodyPatterns: make([]dittomock.DittoBodyPattern, 0, len(req.Mock.Request.BodyPatterns)),
-	}
-
-	for _, reqPattern := range req.Mock.Request.GetBodyPatterns() {
-		p := dittomock.DittoBodyPattern{}
-
-		switch reqPattern.GetPattern().(type) {
-		case *api.DittoBodyPattern_EqualToJson:
-			b, err := structToBytes(reqPattern.GetEqualToJson())
-			if err != nil {
-				return m, fmt.Errorf("structToBytes conversion of equal_to_json: %w", err)
-			}
-			p.EqualToJson = b
-		case *api.DittoBodyPattern_MatchesJsonpath:
-			p.MatchesJsonPath = jsonPathWrapper(reqPattern.GetMatchesJsonpath())
-		}
-
-		m.Request.BodyPatterns = append(m.Request.BodyPatterns, p)
-	}
-
-	return m, nil
+	return dittomock.FromProto(req.Mock)
 }
 
 func jsonPathWrapper(p *api.JSONPathPattern) *dittomock.JSONPathWrapper {

@@ -13,7 +13,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/vadimi/grpc-ditto/api"
 	"github.com/vadimi/grpc-ditto/internal/logger"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/spyzhov/ajson"
 )
@@ -51,7 +53,7 @@ type RequestMatcher struct {
 	rw        sync.RWMutex
 }
 
-func (rm *RequestMatcher) Match(method string, js []byte) (*DittoResponse, error) {
+func (rm *RequestMatcher) Match(method string, js []byte) (*DittoMock, error) {
 	rm.rw.RLock()
 	defer rm.rw.RUnlock()
 
@@ -69,7 +71,7 @@ func (rm *RequestMatcher) Match(method string, js []byte) (*DittoResponse, error
 
 		if res {
 			rm.logger.Debugw("match found", "expr", mock.Request.String())
-			return mock.Response, nil
+			return &mock, nil
 		}
 	}
 
@@ -132,25 +134,24 @@ func (rm *RequestMatcher) loadMock(mockJson string) ([]DittoMock, error) {
 	if err != nil {
 		return mocks, err
 	}
-	msg := json.RawMessage{}
-	err = json.Unmarshal(js, &msg)
+	msgs := []json.RawMessage{}
+	err = json.Unmarshal(js, &msgs)
 	if err != nil {
 		return mocks, err
 	}
-	if msg[0] == '[' {
-		err := json.Unmarshal(msg, &mocks)
-		if err != nil {
-			return mocks, err
-		}
-	} else {
-		var m DittoMock
-		err := json.Unmarshal(msg, &m)
+
+	for _, msg := range msgs {
+		m := &api.DittoMock{}
+		err := protojson.Unmarshal(msg, m)
 		if err != nil {
 			return mocks, err
 		}
 
-		mocks = append(mocks, m)
-
+		dm, err := FromProto(m)
+		if err != nil {
+			return mocks, err
+		}
+		mocks = append(mocks, dm)
 	}
 
 	return mocks, nil

@@ -96,10 +96,12 @@ func greetNotFoundMock() dittomock.DittoMock {
 				},
 			},
 		},
-		Response: &dittomock.DittoResponse{
-			Status: &dittomock.RpcStatus{
-				Code:    codes.Code(apicode.Code_NOT_FOUND),
-				Message: "user not found",
+		Response: []*dittomock.DittoResponse{
+			{
+				Status: &dittomock.RpcStatus{
+					Code:    codes.Code(apicode.Code_NOT_FOUND),
+					Message: "user not found",
+				},
 			},
 		},
 	}
@@ -119,8 +121,10 @@ func greetMock() dittomock.DittoMock {
 				},
 			},
 		},
-		Response: &dittomock.DittoResponse{
-			Body: []byte(`{ "message": "hello Bob" }`),
+		Response: []*dittomock.DittoResponse{
+			{
+				Body: []byte(`{ "message": "hello Bob" }`),
+			},
 		},
 	}
 }

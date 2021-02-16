@@ -24,7 +24,7 @@ message AddMockResponse {}
 
 message DittoMock {
   DittoRequest request = 1;
-  DittoResponse response = 2;
+  repeated DittoResponse response = 2;
 }
 
 // DittoRequest represents request matching object. It matches requests first by method and then by patterns.

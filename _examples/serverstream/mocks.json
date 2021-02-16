@@ -2,27 +2,37 @@
   {
     "request": {
       "method": "/ditto.example.HelloService/Hello",
-      "bodyPatterns": [
+      "body_patterns": [
         {
-          "matchesJsonPath": { "expression": "$.name", "eq": "all" }
+          "matches_jsonpath": { "expression": "$.name", "eq": "all" }
         }
       ]
     },
-    "response": {
-      "body": [{ "name": "user1" }, { "name": "user2" }, { "name": "user3" }]
-    }
+    "response": [
+      {
+        "body": { "name": "user1" }
+      },
+      {
+        "body": { "name": "user2" }
+      },
+      {
+        "body": { "name": "user3" }
+      }
+    ]
   },
   {
     "request": {
       "method": "/ditto.example.HelloService/Hello",
-      "bodyPatterns": [
+      "body_patterns": [
         {
-          "matchesJsonPath": { "expression": "$.name", "eq": "user4" }
+          "matches_jsonpath": { "expression": "$.name", "eq": "user4" }
         }
       ]
     },
-    "response": {
-      "body": [{ "name": "user4" }]
-    }
+    "response": [
+      {
+        "body": { "name": "user4" }
+      }
+    ]
   }
 ]

@@ -31,7 +31,7 @@ type RpcStatus struct {
 
 type DittoMock struct {
 	Request  *DittoRequest
-	Response *DittoResponse
+	Response []*DittoResponse
 }
 
 type DittoBodyPattern struct {

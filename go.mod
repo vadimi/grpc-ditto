@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/golang/protobuf v1.4.3
-	github.com/jhump/protoreflect v1.8.1
+	github.com/jhump/protoreflect v1.8.2
 	github.com/jsternberg/zap-logfmt v1.2.0
 	github.com/spyzhov/ajson v0.4.2
 	github.com/urfave/cli v1.22.5

@@ -129,10 +129,13 @@ func mockServerStreamHandler(srv interface{}, stream grpc.ServerStream) error {
 		if errors.Is(err, dittomock.ErrNotMatched) {
 			mockSrv.logger.Warn("no match found")
 		} else {
-
 			mockSrv.logger.Error(err)
 		}
 		return status.Errorf(codes.Unimplemented, "unimplemented mock for method: %s", fullMethodName)
+	}
+
+	if respMock.Status != nil {
+		return status.Error(respMock.Status.Code, respMock.Status.Message)
 	}
 
 	output := dynamic.NewMessage(methodDesc.GetOutputType())

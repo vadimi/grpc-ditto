@@ -3,6 +3,7 @@ syntax = "proto3";
 package grpcditto.api;
 
 import "google/protobuf/struct.proto";
+import "google/rpc/code.proto";
 
 option go_package = ".;api";
 option csharp_namespace = "GrpcDitto.Api";
@@ -23,7 +24,7 @@ message AddMockResponse {}
 
 message DittoMock {
   DittoRequest request = 1;
-	DittoResponse response = 2;
+  DittoResponse response = 2;
 }
 
 // DittoRequest represents request matching object. It matches requests first by method and then by patterns.
@@ -33,12 +34,20 @@ message DittoMock {
 message DittoRequest {
   // fully qualified grpc method like ``/package.full.name.UserService/Update``
   string method = 1;
-	repeated DittoBodyPattern body_patterns = 2;
+  repeated DittoBodyPattern body_patterns = 2;
 }
 
 message DittoResponse {
-  // Struct conveniently represents any object that doesn't have a strict schema
-	google.protobuf.Struct body = 1;
+  oneof response {
+    // Struct conveniently represents any object that doesn't have a strict schema
+    google.protobuf.Struct body = 1;
+    RpcStatus status = 2;
+  }
+}
+
+message RpcStatus {
+  google.rpc.Code code = 1;
+  string message = 2;
 }
 
 message DittoBodyPattern {

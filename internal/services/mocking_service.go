@@ -66,23 +66,32 @@ func (s *mockingServiceImpl) AddMock(ctx context.Context, req *api.AddMockReques
 }
 
 func dittoMock(req *api.AddMockRequest) (dittomock.DittoMock, error) {
-	m := dittomock.DittoMock{}
+	m := dittomock.DittoMock{
+		Response: &dittomock.DittoResponse{},
+	}
 
 	var respBody []byte
 	var err error
 	if req.Mock.Response != nil {
-		respBody, err = structToBytes(req.Mock.Response.Body)
-		if err != nil {
-			return m, fmt.Errorf("structToBytes: %w", err)
+		switch req.Mock.Response.GetResponse().(type) {
+		case *api.DittoResponse_Body:
+			respBody, err = structToBytes(req.Mock.Response.GetBody())
+			if err != nil {
+				return m, fmt.Errorf("structToBytes: %w", err)
+			}
+
+			if len(respBody) == 0 {
+				respBody = []byte("{}")
+			}
+
+			m.Response.Body = respBody
+		case *api.DittoResponse_Status:
+			status := req.Mock.Response.GetStatus()
+			m.Response.Status = &dittomock.RpcStatus{
+				Code:    codes.Code(status.GetCode()),
+				Message: status.GetMessage(),
+			}
 		}
-	}
-
-	if len(respBody) == 0 {
-		respBody = []byte("{}")
-	}
-
-	m.Response = &dittomock.DittoResponse{
-		Body: []byte(respBody),
 	}
 
 	m.Request = &dittomock.DittoRequest{

@@ -20,8 +20,13 @@ func (dr *DittoRequest) String() string {
 }
 
 type DittoResponse struct {
-	Body       json.RawMessage
-	StatusCode codes.Code
+	Body   json.RawMessage
+	Status *RpcStatus
+}
+
+type RpcStatus struct {
+	Code    codes.Code
+	Message string
 }
 
 type DittoMock struct {

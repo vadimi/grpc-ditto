@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -98,20 +98,25 @@ func NewRequestMatcher(opts ...RequestMatherOption) (*RequestMatcher, error) {
 				return err
 			}
 			ext := strings.ToLower(filepath.Ext(path))
-			var mocks []DittoMock
-			var loaderr error
+			var loadMockFn func(io.Reader) ([]DittoMock, error)
 			switch ext {
 			case ".json":
-				mocks, loaderr = matcher.loadMockJSON(path)
+				loadMockFn = matcher.loadMockJSON
 			case ".yaml", ".yml":
-				mocks, loaderr = matcher.loadMockYAML(path)
+				loadMockFn = matcher.loadMockYAML
 			}
 
-			if loaderr != nil {
-				return loaderr
-			}
+			if loadMockFn != nil {
+				f, err := os.Open(path)
+				defer f.Close()
+				if err != nil {
+					return err
+				}
 
-			if len(mocks) > 0 {
+				mocks, err := loadMockFn(f)
+				if err != nil {
+					return err
+				}
 				mergeMocks(mocks, matcher.rules)
 			}
 
@@ -140,8 +145,8 @@ func (rm *RequestMatcher) AddMock(mock DittoMock) {
 	mergeMocks([]DittoMock{mock}, rm.rules)
 }
 
-func (rm *RequestMatcher) loadMockYAML(mockYAML string) ([]DittoMock, error) {
-	y, err := ioutil.ReadFile(mockYAML)
+func (rm *RequestMatcher) loadMockYAML(mockYAML io.Reader) ([]DittoMock, error) {
+	y, err := io.ReadAll(mockYAML)
 	if err != nil {
 		return []DittoMock{}, err
 	}
@@ -152,8 +157,9 @@ func (rm *RequestMatcher) loadMockYAML(mockYAML string) ([]DittoMock, error) {
 	return rm.loadMock(js)
 }
 
-func (rm *RequestMatcher) loadMockJSON(mockJson string) ([]DittoMock, error) {
-	js, err := ioutil.ReadFile(mockJson)
+func (rm *RequestMatcher) loadMockJSON(mockJson io.Reader) ([]DittoMock, error) {
+	js, err := io.ReadAll(mockJson)
+	// js, err := ioutil.ReadFile(mockJson)
 	if err != nil {
 		return []DittoMock{}, err
 	}

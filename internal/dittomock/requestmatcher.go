@@ -18,6 +18,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/spyzhov/ajson"
+	"sigs.k8s.io/yaml"
 )
 
 var (
@@ -96,13 +97,24 @@ func NewRequestMatcher(opts ...RequestMatherOption) (*RequestMatcher, error) {
 			if err != nil {
 				return err
 			}
-			if filepath.Ext(path) == ".json" {
-				mocks, err := matcher.loadMock(path)
-				if err != nil {
-					return err
-				}
+			ext := strings.ToLower(filepath.Ext(path))
+			var mocks []DittoMock
+			var loaderr error
+			switch ext {
+			case ".json":
+				mocks, loaderr = matcher.loadMockJSON(path)
+			case ".yaml", ".yml":
+				mocks, loaderr = matcher.loadMockYAML(path)
+			}
+
+			if loaderr != nil {
+				return loaderr
+			}
+
+			if len(mocks) > 0 {
 				mergeMocks(mocks, matcher.rules)
 			}
+
 			return nil
 		})
 
@@ -128,14 +140,31 @@ func (rm *RequestMatcher) AddMock(mock DittoMock) {
 	mergeMocks([]DittoMock{mock}, rm.rules)
 }
 
-func (rm *RequestMatcher) loadMock(mockJson string) ([]DittoMock, error) {
-	mocks := []DittoMock{}
+func (rm *RequestMatcher) loadMockYAML(mockYAML string) ([]DittoMock, error) {
+	y, err := ioutil.ReadFile(mockYAML)
+	if err != nil {
+		return []DittoMock{}, err
+	}
+	js, err := yaml.YAMLToJSON(y)
+	if err != nil {
+		return []DittoMock{}, err
+	}
+	return rm.loadMock(js)
+}
+
+func (rm *RequestMatcher) loadMockJSON(mockJson string) ([]DittoMock, error) {
 	js, err := ioutil.ReadFile(mockJson)
 	if err != nil {
-		return mocks, err
+		return []DittoMock{}, err
 	}
+
+	return rm.loadMock(js)
+}
+
+func (rm *RequestMatcher) loadMock(js []byte) ([]DittoMock, error) {
+	mocks := []DittoMock{}
 	msgs := []json.RawMessage{}
-	err = json.Unmarshal(js, &msgs)
+	err := json.Unmarshal(js, &msgs)
 	if err != nil {
 		return mocks, err
 	}

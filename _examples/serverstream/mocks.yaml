@@ -1,0 +1,23 @@
+---
+- request:
+    method: "/ditto.example.HelloService/Hello"
+    body_patterns:
+      - matches_jsonpath:
+          expression: "$.name"
+          eq: all
+  response:
+    - body:
+        name: user1
+    - body:
+        name: user2
+    - body:
+        name: user3
+- request:
+    method: "/ditto.example.HelloService/Hello"
+    body_patterns:
+      - matches_jsonpath:
+          expression: "$.name"
+          eq: user4
+  response:
+    - body:
+        name: user4

@@ -1,0 +1,79 @@
+---
+- request:
+    method: "/ditto.example.BidiService/Hello"
+    body_patterns:
+      - matches_jsonpath:
+          expression: "$.length"
+          eq: "1"
+      - matches_jsonpath:
+          expression: "$[0].begin"
+          eq: "{}"
+  response:
+    - body:
+        name: begin
+- request:
+    method: "/ditto.example.BidiService/Hello"
+    body_patterns:
+      - matches_jsonpath:
+          expression: "$[0].begin"
+          eq: "{}"
+      - matches_jsonpath:
+          expression: "$[1].send_item.name"
+          eq: "2"
+  response:
+    - body:
+        name: begin
+    - body:
+        name: send
+- request:
+    method: "/ditto.example.BidiService/Hello"
+    body_patterns:
+      - matches_jsonpath:
+          expression: "$[0].send_item.name"
+          eq: "3"
+  response:
+    - body:
+        name: send only
+- request:
+    method: "/ditto.example.BidiService/Hello"
+    body_patterns:
+      - matches_jsonpath:
+          expression: "$[0].begin"
+          eq: "{}"
+      - matches_jsonpath:
+          expression: "$[1].send_item.name"
+          eq: "4"
+      - matches_jsonpath:
+          expression: "$[2].complete"
+          eq: "{}"
+  response:
+    - body:
+        name: begin
+    - body:
+        name: send
+    - body:
+        name: complete
+- request:
+    method: "/ditto.example.BidiService/Hello"
+    body_patterns:
+      - matches_jsonpath:
+          expression: "$[0].begin"
+          eq: "{}"
+      - matches_jsonpath:
+          expression: "$[1].send_item.name"
+          eq: error
+  response:
+    - body:
+        name: begin
+    - status:
+        code: UNKNOWN
+        message: oops, something went wrong
+- request:
+    method: "/ditto.example.BidiService/Hello"
+    body_patterns:
+      - matches_jsonpath:
+          expression: "$.length"
+          regexp: "^[0-9]$"
+  response:
+    - body:
+        name: all other

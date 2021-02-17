@@ -1,0 +1,28 @@
+---
+- request:
+    method: "/greet.Greeter/SayHello"
+    body_patterns:
+      - matches_jsonpath:
+          expression: "$.name"
+          eq: Bob
+  response:
+    - body:
+        message: hello Bob
+- request:
+    method: "/greet.Greeter/SayHello"
+    body_patterns:
+      - matches_jsonpath:
+          expression: "$.name"
+          eq: John
+  response:
+    - status:
+        code: NOT_FOUND
+        message: user not found
+- request:
+    method: "/greet.Greeter/SayHello"
+    body_patterns:
+      - matches_jsonpath:
+          expression: "$.name"
+  response:
+    - body:
+        message: hello human

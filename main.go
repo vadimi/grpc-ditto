@@ -12,7 +12,7 @@ func main() {
 	log := logger.NewLogger(logger.WithLevel("debug"))
 
 	app := cli.NewApp()
-	app.Version = "1.0.0"
+	app.Version = "0.7.1"
 	app.Usage = "grpc mocking server"
 	app.Flags = []cli.Flag{
 		cli.StringSliceFlag{

@@ -235,17 +235,13 @@ func jsonPathMatcher(jsonSrc []byte, pattern *JSONPathWrapper) (bool, error) {
 		return strings.Contains(nodes[0].String(), pattern.Contains), nil
 	}
 
-	patternVal := pattern.Equals
-	isRegexp := false
+	patternVal := pattern.Regexp
+	isRegexp := true
 	if patternVal == "" {
-		patternVal = pattern.Regexp
-		isRegexp = true
+		patternVal = pattern.Equals
+		isRegexp = false
 	}
 	result := false
-
-	if patternVal == "" {
-		return result, errors.New("matching expressions cannot be empty")
-	}
 
 	if isRegexp {
 		return regexpMatcher(patternVal, nodes)

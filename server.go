@@ -184,7 +184,7 @@ func readInput(stream grpc.ServerStream, methodDesc *desc.MethodDescriptor) ([]b
 			return nil, err
 		}
 
-		js, err := in.MarshalJSONPB(&jsonpb.Marshaler{OrigName: true})
+		js, err := in.MarshalJSONPB(&jsonpb.Marshaler{OrigName: true, EmitDefaults: true})
 		if err != nil {
 			return nil, status.Errorf(codes.Unknown, "input message json marshaling: %s", err)
 		}

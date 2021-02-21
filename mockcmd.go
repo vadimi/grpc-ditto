@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -120,15 +121,16 @@ func newMockCmd(log logger.Logger) func(ctx *cli.Context) error {
 }
 
 func parseProtoFiles(ctx *cli.Context) ([]*desc.FileDescriptor, error) {
-	protoDirs := ctx.StringSlice("proto")
-	protofiles, err := findProtoFiles(protoDirs)
+	protoPaths := ctx.StringSlice("proto")
+	protofiles, err := findProtoFiles(protoPaths)
 	if err != nil {
 		return nil, err
 	}
 	if len(protofiles) == 0 {
-		return nil, fmt.Errorf("no proto files found in %s", protoDirs)
+		return nil, fmt.Errorf("no proto files found in %s", protoPaths)
 	}
 
+	protoDirs := resolveProtoDirs(protoPaths)
 	// additional directories to look for dependencies
 	protoDirs = append(protoDirs, ctx.StringSlice("protoimports")...)
 
@@ -147,16 +149,47 @@ func parseProtoFiles(ctx *cli.Context) ([]*desc.FileDescriptor, error) {
 	return p.ParseFiles(resolvedFiles...)
 }
 
-func findProtoFiles(dirs []string) ([]string, error) {
+func resolveProtoDirs(paths []string) []string {
+	tmp := map[string]struct{}{}
+	for _, p := range paths {
+		if fi, err := os.Stat(p); err == nil {
+			if fi.IsDir() {
+				tmp[p] = struct{}{}
+			} else {
+				tmp[filepath.Dir(p)] = struct{}{}
+			}
+		}
+	}
+
+	var res []string
+	for k := range tmp {
+		res = append(res, k)
+	}
+
+	return res
+}
+
+func findProtoFiles(paths []string) ([]string, error) {
 	protofiles := []string{}
-	for _, dir := range dirs {
-		files, err := ioutil.ReadDir(dir)
+	for _, p := range paths {
+		fi, err := os.Stat(p)
+		if err != nil {
+			return nil, err
+		}
+		if !fi.IsDir() {
+			if isProto(fi.Name()) {
+				protofiles = append(protofiles, fi.Name())
+			}
+			continue
+		}
+
+		files, err := ioutil.ReadDir(p)
 		if err != nil {
 			return nil, err
 		}
 
 		for _, f := range files {
-			if filepath.Ext(f.Name()) == ".proto" {
+			if isProto(f.Name()) {
 				protofiles = append(protofiles, f.Name())
 			}
 		}
@@ -185,4 +218,8 @@ func healthCheckMocks() dittomock.DittoMock {
 			},
 		},
 	}
+}
+
+func isProto(p string) bool {
+	return strings.ToLower(filepath.Ext(p)) == ".proto"
 }

@@ -159,7 +159,6 @@ func (rm *RequestMatcher) loadMockYAML(mockYAML io.Reader) ([]DittoMock, error) 
 
 func (rm *RequestMatcher) loadMockJSON(mockJson io.Reader) ([]DittoMock, error) {
 	js, err := io.ReadAll(mockJson)
-	// js, err := ioutil.ReadFile(mockJson)
 	if err != nil {
 		return []DittoMock{}, err
 	}

@@ -267,6 +267,9 @@ func jsonPathMatcher(jsonSrc []byte, pattern *JSONPathWrapper) (bool, error) {
 			result = pbVal == bVal
 		case ajson.Object, ajson.Array:
 			result, err = jsonMatcher([]byte(node.String()), []byte(patternVal))
+			if err != nil {
+				return false, err
+			}
 		default:
 			result = false
 		}

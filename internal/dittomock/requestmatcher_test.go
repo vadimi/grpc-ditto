@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
 )
 
 func TestMockLoaderJSON(t *testing.T) {
@@ -46,6 +47,62 @@ func TestMockLoaderJSON(t *testing.T) {
 	assert.Equal(t, "ok", body["message"])
 }
 
+func TestMockLoaderMultipleJSON(t *testing.T) {
+	js := `[
+  {
+    "request": {
+      "method": "/greet.Greeter/SayHello",
+      "body_patterns": [
+        {
+          "matches_jsonpath": { "expression": "$.name", "eq": "Bob" }
+        }
+      ]
+    },
+    "response": [
+      {
+        "body": { "message": "ok" }
+      }
+    ]
+  },
+  {
+    "request": {
+      "method": "/greet.Greeter/SayHello",
+      "body_patterns": [
+        {
+          "matches_jsonpath": { "expression": "$.name", "eq": "John" }
+        }
+      ]
+    },
+    "response": [
+      {
+        "body": { "message": "ok" }
+      },
+      {
+        "body": { "message": "ok" }
+      }
+    ]
+  }
+]
+`
+	r := strings.NewReader(js)
+
+	rm, err := NewRequestMatcher()
+	require.NoError(t, err)
+
+	mocks, err := rm.loadMockJSON(r)
+	require.NoError(t, err)
+	require.Len(t, mocks, 2)
+	assert.Equal(t, "/greet.Greeter/SayHello", mocks[1].Request.Method)
+	assert.Equal(t, "$.name", mocks[1].Request.BodyPatterns[0].MatchesJsonPath.Expression)
+	assert.Equal(t, "John", mocks[1].Request.BodyPatterns[0].MatchesJsonPath.Equals)
+
+	require.Len(t, mocks[1].Response, 2)
+	var body map[string]string
+	err = json.Unmarshal(mocks[1].Response[0].Body, &body)
+	require.NoError(t, err)
+	assert.Equal(t, "ok", body["message"])
+}
+
 func TestMockLoaderYAML(t *testing.T) {
 	js := `---
 - request:
@@ -74,6 +131,32 @@ func TestMockLoaderYAML(t *testing.T) {
 	err = json.Unmarshal(mocks[0].Response[0].Body, &body)
 	require.NoError(t, err)
 	assert.Equal(t, "ok", body["message"])
+}
+
+func TestMockLoaderStatusResponse(t *testing.T) {
+	js := `---
+- request:
+    method: "/greet.Greeter/SayHello"
+    body_patterns:
+      - matches_jsonpath:
+          expression: "$.name"
+          eq: Bob
+  response:
+    - status:
+        code: UNKNOWN
+        message: oops, something went wrong
+`
+	r := strings.NewReader(js)
+
+	rm, err := NewRequestMatcher()
+	require.NoError(t, err)
+
+	mocks, err := rm.loadMockYAML(r)
+	require.NoError(t, err)
+	require.NotEmpty(t, mocks)
+
+	require.NotNil(t, mocks[0].Response[0].Status)
+	assert.Equal(t, codes.Unknown, mocks[0].Response[0].Status.Code)
 }
 
 func TestSimpleJSONMatching(t *testing.T) {

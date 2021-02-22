@@ -213,7 +213,7 @@ func healthCheckFileDescriptor() (*desc.FileDescriptor, error) {
 func findFileDescriptor(name string) (*desc.FileDescriptor, error) {
 	fileDesc, err := protoregistry.GlobalFiles.FindFileByPath(name)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", name, err)
 	}
 
 	fdproto := protodesc.ToFileDescriptorProto(fileDesc)

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"testing"
@@ -15,6 +16,7 @@ import (
 	"github.com/vadimi/grpc-ditto/internal/logger"
 	"github.com/vadimi/grpc-ditto/testdata/greet"
 	_ "github.com/vadimi/grpc-ditto/testdata/greet"
+	"github.com/vadimi/grpc-ditto/testdata/hello"
 	apicode "google.golang.org/genproto/googleapis/rpc/code"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -67,6 +69,97 @@ func TestMockServerUnarySuccess(t *testing.T) {
 	assert.Equal(t, "hello Bob", resp.Message)
 }
 
+func TestMockServerStreamingSuccess(t *testing.T) {
+	cc, err := grpc.Dial(testAddr, grpc.WithInsecure())
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := hello.NewHelloServiceClient(cc)
+	resp, _ := client.Hello(context.Background(), &hello.HelloRequest{
+		Name: "all",
+	})
+
+	var messages []*hello.HelloResponse
+	for {
+		msg, err := resp.Recv()
+		if err == io.EOF {
+			break
+		}
+
+		require.NoError(t, err)
+
+		messages = append(messages, msg)
+	}
+
+	require.Len(t, messages, 2)
+	assert.Equal(t, "hello Bob", messages[0].GetName())
+	assert.Equal(t, "hello John", messages[1].GetName())
+}
+
+func TestMockServerBidiStreamingSuccess(t *testing.T) {
+	cc, err := grpc.Dial(testAddr, grpc.WithInsecure())
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := hello.NewHelloServiceClient(cc)
+	stream, err := client.HelloMulti(context.Background())
+	require.NoError(t, err)
+
+	require.NoError(t, stream.Send(&hello.HelloRequest{Name: "Bob"}))
+	require.NoError(t, stream.Send(&hello.HelloRequest{Name: "John"}))
+	stream.CloseSend()
+
+	var messages []*hello.HelloResponse
+	for {
+		msg, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+
+		require.NoError(t, err)
+
+		messages = append(messages, msg)
+	}
+
+	require.Len(t, messages, 2)
+	assert.Equal(t, "hello Bob", messages[0].GetName())
+	assert.Equal(t, "hello John", messages[1].GetName())
+}
+
+func TestMockServerBidiStreamingError(t *testing.T) {
+	cc, err := grpc.Dial(testAddr, grpc.WithInsecure())
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := hello.NewHelloServiceClient(cc)
+	stream, err := client.HelloMulti(context.Background())
+	require.NoError(t, err)
+
+	require.NoError(t, stream.Send(&hello.HelloRequest{Name: "Tom"}))
+	require.NoError(t, stream.Send(&hello.HelloRequest{Name: "Jerry"}))
+	stream.CloseSend()
+
+	index := 0
+	for {
+		msg, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+
+		if index == 0 {
+			require.NoError(t, err)
+			assert.Equal(t, "hello Tom", msg.GetName())
+		} else {
+			require.Error(t, err)
+			errStatus, _ := status.FromError(err)
+			assert.Equal(t, codes.NotFound, errStatus.Code())
+			break
+		}
+
+		index++
+	}
+}
+
 func createListener(server *grpc.Server) (*grpc.Server, string, error) {
 	port := 0
 	if l, err := net.Listen("tcp", "127.0.0.1:0"); err != nil {
@@ -106,6 +199,7 @@ func greetNotFoundMock() dittomock.DittoMock {
 		},
 	}
 }
+
 func greetMock() dittomock.DittoMock {
 	return dittomock.DittoMock{
 		Request: &dittomock.DittoRequest{
@@ -129,17 +223,111 @@ func greetMock() dittomock.DittoMock {
 	}
 }
 
-func startTestServer() (*grpc.Server, string, error) {
-	d, err := findFileDescriptor("greet.proto")
-	if err != nil {
-		return nil, "", err
+func helloStreamMock() dittomock.DittoMock {
+	return dittomock.DittoMock{
+		Request: &dittomock.DittoRequest{
+			Method: "/ditto.example.HelloService/Hello",
+			BodyPatterns: []dittomock.DittoBodyPattern{
+				{
+					MatchesJsonPath: &dittomock.JSONPathWrapper{
+						JSONPathMessage: dittomock.JSONPathMessage{
+							Expression: "$.name",
+							Equals:     "all",
+						},
+					},
+				},
+			},
+		},
+		Response: []*dittomock.DittoResponse{
+			{
+				Body: []byte(`{ "name": "hello Bob" }`),
+			},
+			{
+				Body: []byte(`{ "name": "hello John" }`),
+			},
+		},
 	}
+}
 
+func helloBidiStreamMock() dittomock.DittoMock {
+	return dittomock.DittoMock{
+		Request: &dittomock.DittoRequest{
+			Method: "/ditto.example.HelloService/HelloMulti",
+			BodyPatterns: []dittomock.DittoBodyPattern{
+				{
+					MatchesJsonPath: &dittomock.JSONPathWrapper{
+						JSONPathMessage: dittomock.JSONPathMessage{
+							Expression: "$[0].name",
+							Equals:     "Bob",
+						},
+					},
+				},
+				{
+					MatchesJsonPath: &dittomock.JSONPathWrapper{
+						JSONPathMessage: dittomock.JSONPathMessage{
+							Expression: "$[1].name",
+							Equals:     "John",
+						},
+					},
+				},
+			},
+		},
+		Response: []*dittomock.DittoResponse{
+			{
+				Body: []byte(`{ "name": "hello Bob" }`),
+			},
+			{
+				Body: []byte(`{ "name": "hello John" }`),
+			},
+		},
+	}
+}
+
+func helloBidiStreamMockErr() dittomock.DittoMock {
+	return dittomock.DittoMock{
+		Request: &dittomock.DittoRequest{
+			Method: "/ditto.example.HelloService/HelloMulti",
+			BodyPatterns: []dittomock.DittoBodyPattern{
+				{
+					MatchesJsonPath: &dittomock.JSONPathWrapper{
+						JSONPathMessage: dittomock.JSONPathMessage{
+							Expression: "$[0].name",
+							Equals:     "Tom",
+						},
+					},
+				},
+				{
+					MatchesJsonPath: &dittomock.JSONPathWrapper{
+						JSONPathMessage: dittomock.JSONPathMessage{
+							Expression: "$[1].name",
+							Equals:     "Jerry",
+						},
+					},
+				},
+			},
+		},
+		Response: []*dittomock.DittoResponse{
+			{
+				Body: []byte(`{ "name": "hello Tom" }`),
+			},
+			{
+				Status: &dittomock.RpcStatus{
+					Code: codes.NotFound,
+				},
+			},
+		},
+	}
+}
+
+func startTestServer() (*grpc.Server, string, error) {
 	log := logger.NewLogger()
 	requestMatcher, err := dittomock.NewRequestMatcher(
 		dittomock.WithMocks([]dittomock.DittoMock{
 			greetMock(),
 			greetNotFoundMock(),
+			helloStreamMock(),
+			helloBidiStreamMock(),
+			helloBidiStreamMockErr(),
 		}),
 		dittomock.WithLogger(log),
 	)
@@ -148,8 +336,18 @@ func startTestServer() (*grpc.Server, string, error) {
 		return nil, "", err
 	}
 
+	greetDescr, err := findFileDescriptor("greet.proto")
+	if err != nil {
+		return nil, "", err
+	}
+
+	helloDescr, err := findFileDescriptor("hello.proto")
+	if err != nil {
+		return nil, "", err
+	}
+
 	s := &mockServer{
-		descrs:  []*desc.FileDescriptor{d},
+		descrs:  []*desc.FileDescriptor{greetDescr, helloDescr},
 		logger:  log,
 		matcher: requestMatcher,
 	}

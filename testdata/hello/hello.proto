@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package ditto.example;
+
+option go_package = ".;hello";
+
+service HelloService {
+  rpc Hello(HelloRequest) returns (stream HelloResponse);
+  rpc HelloMulti(stream HelloRequest) returns (stream HelloResponse);
+}
+
+message HelloRequest {
+  string name = 1;
+}
+
+message HelloResponse {
+  string name = 1;
+}

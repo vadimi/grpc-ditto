@@ -33,14 +33,21 @@ type mockServer struct {
 	matcher *dittomock.RequestMatcher
 }
 
-func (s *mockServer) findMessageByMethod(method string) *desc.MethodDescriptor {
-	name := method[strings.LastIndex(method, "/")+1:]
+func (s *mockServer) findMethodByName(method string) *desc.MethodDescriptor {
+	if method == "" {
+		return nil
+	}
+
+	serviceName := strings.Trim(method[0:strings.LastIndex(method, "/")], "/")
+	methodName := method[strings.LastIndex(method, "/")+1:]
 	for _, d := range s.descrs {
-		for _, s := range d.GetServices() {
-			methodDesc := s.FindMethodByName(name)
-			if methodDesc != nil {
-				return methodDesc
-			}
+		s := d.FindService(serviceName)
+		if s == nil {
+			continue
+		}
+		methodDesc := s.FindMethodByName(methodName)
+		if methodDesc != nil {
+			return methodDesc
 		}
 	}
 	return nil
@@ -112,7 +119,7 @@ func mockServerStreamHandler(srv interface{}, stream grpc.ServerStream) error {
 	mockSrv := srv.(*mockServer)
 	mockSrv.logger.Debugw("grpc call", "method", fullMethodName)
 
-	methodDesc := mockSrv.findMessageByMethod(fullMethodName)
+	methodDesc := mockSrv.findMethodByName(fullMethodName)
 	if methodDesc == nil {
 		return status.Errorf(codes.Unimplemented, "unimplemented mock for method: %s", fullMethodName)
 	}
@@ -133,20 +140,6 @@ func mockServerStreamHandler(srv interface{}, stream grpc.ServerStream) error {
 		}
 		return status.Errorf(codes.Unimplemented, "unimplemented mock for method: %s", fullMethodName)
 	}
-
-	// if methodDesc.IsServerStreaming() {
-	// 	if respMock.Body[0] != '[' {
-	// 		err := fmt.Errorf("server streaming method requires array in response body: %s", fullMethodName)
-	// 		mockSrv.logger.Error(err)
-	// 		return status.Error(codes.Unimplemented, err.Error())
-	// 	}
-
-	// 	var arr []json.RawMessage
-	// 	if err := json.Unmarshal(respMock.Body, &arr); err != nil {
-	// 		return status.Errorf(codes.Unknown, "output message json unmarshaling: %s", err)
-	// 	}
-	// 	outputMessages = arr
-	// }
 
 	for _, resp := range mock.Response {
 		if resp.Status != nil {

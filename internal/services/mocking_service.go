@@ -1,7 +1,6 @@
 package services
 
 import (
-	"bytes"
 	"context"
 
 	"github.com/vadimi/grpc-ditto/api"
@@ -9,19 +8,23 @@ import (
 	"github.com/vadimi/grpc-ditto/internal/logger"
 
 	"github.com/golang/protobuf/jsonpb"
-	pstruct "github.com/golang/protobuf/ptypes/struct"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type mockingServiceImpl struct {
-	matcher *dittomock.RequestMatcher
-	log     logger.Logger
+	matcher   *dittomock.RequestMatcher
+	log       logger.Logger
+	validator MockValidator
 
 	api.UnimplementedMockingServiceServer
 }
 
-func NewMockingService(matcher *dittomock.RequestMatcher, log logger.Logger) api.MockingServiceServer {
+type MockValidator interface {
+	ValidateMock(dittomock.DittoMock) error
+}
+
+func NewMockingService(matcher *dittomock.RequestMatcher, validator MockValidator, log logger.Logger) api.MockingServiceServer {
 	return &mockingServiceImpl{
 		matcher: matcher,
 		log:     log,
@@ -59,6 +62,11 @@ func (s *mockingServiceImpl) AddMock(ctx context.Context, req *api.AddMockReques
 		return nil, err
 	}
 
+	if err := s.validator.ValidateMock(mock); err != nil {
+		s.log.Errorw("mock validation failed", "err", err)
+		return nil, err
+	}
+
 	s.matcher.AddMock(mock)
 
 	return &api.AddMockResponse{}, nil
@@ -66,38 +74,4 @@ func (s *mockingServiceImpl) AddMock(ctx context.Context, req *api.AddMockReques
 
 func dittoMock(req *api.AddMockRequest) (dittomock.DittoMock, error) {
 	return dittomock.FromProto(req.Mock)
-}
-
-func jsonPathWrapper(p *api.JSONPathPattern) *dittomock.JSONPathWrapper {
-	w := &dittomock.JSONPathWrapper{
-		JSONPathMessage: dittomock.JSONPathMessage{
-			Expression: p.GetExpression(),
-		},
-	}
-
-	switch p.GetOperator().(type) {
-	case *api.JSONPathPattern_Eq:
-		w.JSONPathMessage.Equals = p.GetEq()
-	case *api.JSONPathPattern_Regexp:
-		w.JSONPathMessage.Regexp = p.GetRegexp()
-	case *api.JSONPathPattern_Contains:
-		w.JSONPathMessage.Contains = p.GetContains()
-	default:
-		w.Partial = true
-	}
-
-	return w
-}
-
-func structToBytes(msg *pstruct.Struct) ([]byte, error) {
-	if msg == nil {
-		return nil, nil
-	}
-
-	buf := &bytes.Buffer{}
-	if err := (&jsonpb.Marshaler{OrigName: true}).Marshal(buf, msg); err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
 }

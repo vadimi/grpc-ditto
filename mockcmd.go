@@ -83,13 +83,24 @@ func newMockCmd(log logger.Logger) func(ctx *cli.Context) error {
 			}
 		}
 
+		validator := &mockValidator{
+			findMethodFunc: mockServer.findMethodByName,
+		}
+
+		if err := validator.Validate(requestMatcher.Mocks()); err != nil {
+			return err
+		}
+
 		server := grpc.NewServer(grpc.UnknownServiceHandler(unknownHandler))
 		for _, mockService := range mockServer.serviceDescriptors() {
 			log.Infow("register mock service", "service", mockService.ServiceName)
 			server.RegisterService(mockService, mockServer)
 		}
 
-		api.RegisterMockingServiceServer(server, services.NewMockingService(requestMatcher, log))
+		api.RegisterMockingServiceServer(
+			server,
+			services.NewMockingService(requestMatcher, validator, log),
+		)
 
 		reflection.Register(server)
 

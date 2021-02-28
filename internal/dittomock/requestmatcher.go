@@ -145,6 +145,13 @@ func (rm *RequestMatcher) AddMock(mock DittoMock) {
 	mergeMocks([]DittoMock{mock}, rm.rules)
 }
 
+func (rm *RequestMatcher) Mocks() map[string][]DittoMock {
+	rm.rw.Lock()
+	defer rm.rw.Unlock()
+
+	return rm.rules
+}
+
 func (rm *RequestMatcher) loadMockYAML(mockYAML io.Reader) ([]DittoMock, error) {
 	y, err := io.ReadAll(mockYAML)
 	if err != nil {

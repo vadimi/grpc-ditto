@@ -1,18 +1,16 @@
 package main
 
 import (
+	"log"
 	"os"
-
-	"github.com/vadimi/grpc-ditto/internal/logger"
 
 	"github.com/urfave/cli"
 )
 
 func main() {
-	log := logger.NewLogger(logger.WithLevel("debug"))
 
 	app := cli.NewApp()
-	app.Version = "0.7.1"
+	app.Version = "0.8.1"
 	app.Usage = "grpc mocking server"
 	app.Flags = []cli.Flag{
 		cli.StringSliceFlag{
@@ -30,6 +28,12 @@ func main() {
 			Required: true,
 			Usage:    "directory containing mocks in json format",
 		},
+		cli.StringFlag{
+			Name:     "loglevel,l",
+			Required: false,
+			Value:    "debug",
+			Usage:    "log level",
+		},
 		cli.IntFlag{
 			Name:     "port,p",
 			Required: false,
@@ -37,7 +41,8 @@ func main() {
 			Value:    51000,
 		},
 	}
-	app.Action = newMockCmd(log)
+
+	app.Action = newMockCmd()
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)

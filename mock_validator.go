@@ -17,7 +17,6 @@ type mockValidator struct {
 func (v *mockValidator) Validate(mocks map[string][]dittomock.DittoMock) error {
 	for methodName, mocks := range mocks {
 		method := v.findMethodFunc(methodName)
-		fmt.Println(methodName, method)
 		if method == nil {
 			return fmt.Errorf("method %s not found in registered proto files", methodName)
 		}

@@ -107,6 +107,7 @@ func NewRequestMatcher(opts ...RequestMatherOption) (*RequestMatcher, error) {
 			}
 
 			if loadMockFn != nil {
+				matcher.logger.Debugw("load mock file", "file", path)
 				f, err := os.Open(path)
 				defer f.Close()
 				if err != nil {
@@ -117,6 +118,7 @@ func NewRequestMatcher(opts ...RequestMatherOption) (*RequestMatcher, error) {
 				if err != nil {
 					return err
 				}
+				matcher.logger.Debugw("merging mocks", "file", path, "count", len(mocks))
 				mergeMocks(mocks, matcher.rules)
 			}
 

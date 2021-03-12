@@ -34,8 +34,9 @@ const (
 	maxShutdownTime = 30 * time.Second
 )
 
-func newMockCmd(log logger.Logger) func(ctx *cli.Context) error {
+func newMockCmd() func(ctx *cli.Context) error {
 	return func(ctx *cli.Context) error {
+		log := logger.NewLogger(logger.WithLevel(ctx.String("loglevel")))
 		grpclog.SetLoggerV2(logger.NewGrpcLogger(log, "error"))
 
 		descrs, err := parseProtoFiles(ctx)
@@ -75,7 +76,7 @@ func newMockCmd(log logger.Logger) func(ctx *cli.Context) error {
 
 		// registering files is required to setup reflection service
 		for name, fd := range fileDescrs {
-			log.Infow("register mock file", "name", name)
+			log.Infow("register proto file", "name", name)
 			_, err := protoregistry.GlobalFiles.FindFileByPath(name)
 			if err == protoregistry.NotFound {
 				// DescBuilder also registers files
@@ -87,6 +88,7 @@ func newMockCmd(log logger.Logger) func(ctx *cli.Context) error {
 			findMethodFunc: mockServer.findMethodByName,
 		}
 
+		log.Info("validating mocks")
 		if err := validator.Validate(requestMatcher.Mocks()); err != nil {
 			return err
 		}
@@ -104,31 +106,34 @@ func newMockCmd(log logger.Logger) func(ctx *cli.Context) error {
 
 		reflection.Register(server)
 
-		port := ctx.Int("port")
-		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-		if err != nil {
-			return err
-		}
-		go func() {
-			sigs := make(chan os.Signal, 1)
-			signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
-			<-sigs
-			log.Info("stopping service")
-			timer := time.AfterFunc(maxShutdownTime, func() {
-				log.Info("force stop gRPC server")
-				server.Stop()
-			})
-			defer timer.Stop()
-			server.GracefulStop()
-		}()
-
-		log.Infow("start server", "port", port)
-		if err := server.Serve(lis); err != nil {
-			return err
-		}
-
-		return nil
+		return startServer(ctx.Int("port"), server, log)
 	}
+}
+
+func startServer(port int, server *grpc.Server, log logger.Logger) error {
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		return err
+	}
+	go func() {
+		sigs := make(chan os.Signal, 1)
+		signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT)
+		<-sigs
+		log.Info("stopping service")
+		timer := time.AfterFunc(maxShutdownTime, func() {
+			log.Info("force stop gRPC server")
+			server.Stop()
+		})
+		defer timer.Stop()
+		server.GracefulStop()
+	}()
+
+	log.Infow("start server", "port", port)
+	if err := server.Serve(lis); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func parseProtoFiles(ctx *cli.Context) ([]*desc.FileDescriptor, error) {
@@ -232,5 +237,5 @@ func healthCheckMocks() dittomock.DittoMock {
 }
 
 func isProto(p string) bool {
-	return strings.ToLower(filepath.Ext(p)) == ".proto"
+	return strings.EqualFold(filepath.Ext(p), ".proto")
 }

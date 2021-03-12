@@ -117,14 +117,14 @@ func mockServerStreamHandler(srv interface{}, stream grpc.ServerStream) error {
 	}
 
 	mockSrv := srv.(*mockServer)
-	mockSrv.logger.Debugw("grpc call", "method", fullMethodName)
+	mockSrv.logger.Infow("grpc call", "method", fullMethodName)
 
 	methodDesc := mockSrv.findMethodByName(fullMethodName)
 	if methodDesc == nil {
 		return status.Errorf(codes.Unimplemented, "unimplemented mock for method: %s", fullMethodName)
 	}
 
-	inputJS, err := readInput(stream, methodDesc)
+	inputJS, err := readInput(stream, methodDesc, mockSrv.logger)
 	if err != nil {
 		mockSrv.logger.Error(fmt.Errorf("input message json marshaling: %w", err))
 		return err
@@ -162,12 +162,15 @@ func mockServerStreamHandler(srv interface{}, stream grpc.ServerStream) error {
 	return nil
 }
 
-func readInput(stream grpc.ServerStream, methodDesc *desc.MethodDescriptor) ([]byte, error) {
+func readInput(stream grpc.ServerStream, methodDesc *desc.MethodDescriptor, log logger.Logger) ([]byte, error) {
+	inputType := methodDesc.GetInputType()
+	log.Debugw("read input", "type", inputType.GetFullyQualifiedName(), "client_stream", methodDesc.IsClientStreaming())
+
 	// for loop supports both client streaming and unary messages
 	// io.EOF means it's the last message on the stream
 	var inMessages []json.RawMessage
 	for {
-		in := dynamic.NewMessage(methodDesc.GetInputType())
+		in := dynamic.NewMessage(inputType)
 
 		err := stream.RecvMsg(in)
 		if err != nil {

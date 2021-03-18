@@ -3,7 +3,7 @@ module github.com/vadimi/grpc-ditto
 go 1.16
 
 require (
-	github.com/golang/protobuf v1.4.3
+	github.com/golang/protobuf v1.5.1
 	github.com/jhump/protoreflect v1.8.2
 	github.com/jsternberg/zap-logfmt v1.2.0
 	github.com/spyzhov/ajson v0.4.2
@@ -14,6 +14,6 @@ require (
 	google.golang.org/genproto v0.0.0-20210212180131-e7f2df4ecc2d
 	google.golang.org/grpc v1.36.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.1.0
-	google.golang.org/protobuf v1.25.1-0.20200805231151-a709e31e5d12
+	google.golang.org/protobuf v1.26.0
 	sigs.k8s.io/yaml v1.2.0
 )

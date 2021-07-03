@@ -8,7 +8,6 @@ import (
 )
 
 func main() {
-
 	app := cli.NewApp()
 	app.Version = "0.8.1"
 	app.Usage = "grpc mocking server"

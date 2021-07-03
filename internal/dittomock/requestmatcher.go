@@ -21,9 +21,7 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-var (
-	ErrNotMatched = errors.New("dittomock: request not matched")
-)
+var ErrNotMatched = errors.New("dittomock: request not matched")
 
 type RequestMatherOption func(*RequestMatcher)
 
@@ -124,7 +122,6 @@ func NewRequestMatcher(opts ...RequestMatherOption) (*RequestMatcher, error) {
 
 			return nil
 		})
-
 		if err != nil {
 			return nil, err
 		}

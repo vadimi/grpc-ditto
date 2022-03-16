@@ -4,15 +4,15 @@ go 1.17
 
 require (
 	github.com/golang/protobuf v1.5.2
-	github.com/jhump/protoreflect v1.10.1
+	github.com/jhump/protoreflect v1.12.0
 	github.com/jsternberg/zap-logfmt v1.2.0
-	github.com/spyzhov/ajson v0.7.0
-	github.com/stretchr/testify v1.7.0
+	github.com/spyzhov/ajson v0.7.1
+	github.com/stretchr/testify v1.7.1
 	github.com/urfave/cli v1.22.5
-	go.uber.org/zap v1.19.1
+	go.uber.org/zap v1.21.0
 	golang.org/x/text v0.3.7
-	google.golang.org/genproto v0.0.0-20211223182754-3ac035c7e7cb
-	google.golang.org/grpc v1.43.0
+	google.golang.org/genproto v0.0.0-20220314164441-57ef72a4c106
+	google.golang.org/grpc v1.45.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.2.0
 	google.golang.org/protobuf v1.27.1
 	sigs.k8s.io/yaml v1.3.0

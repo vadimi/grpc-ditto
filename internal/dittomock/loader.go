@@ -30,6 +30,11 @@ func FromProto(req *api.DittoMock) (DittoMock, error) {
 					respBody = []byte("{}")
 				}
 
+				respBody, err = parseTemplate(respBody)
+				if err != nil {
+					return m, fmt.Errorf("cannot parse response body template: %w", err)
+				}
+
 				m.Response = append(m.Response, &DittoResponse{
 					Body: respBody,
 				})
@@ -79,11 +84,11 @@ func jsonPathWrapper(p *api.JSONPathPattern) *JSONPathWrapper {
 
 	switch p.GetOperator().(type) {
 	case *api.JSONPathPattern_Eq:
-		w.JSONPathMessage.Equals = p.GetEq()
+		w.Equals = p.GetEq()
 	case *api.JSONPathPattern_Regexp:
-		w.JSONPathMessage.Regexp = p.GetRegexp()
+		w.Regexp = p.GetRegexp()
 	case *api.JSONPathPattern_Contains:
-		w.JSONPathMessage.Contains = p.GetContains()
+		w.Contains = p.GetContains()
 	default:
 		w.Partial = true
 	}

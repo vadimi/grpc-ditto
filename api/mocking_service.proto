@@ -42,6 +42,9 @@ message DittoResponse {
     // Struct conveniently represents any object that doesn't have a strict schema
     google.protobuf.Struct body = 1;
     RpcStatus status = 2;
+    // provide a go template to dynamically generate response,
+    // yaml and json are supported inside of the template
+    string body_template = 3;
   }
 }
 

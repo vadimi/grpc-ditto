@@ -375,7 +375,7 @@ func TestMockLoaderJSON_ResponseBodyTemplate(t *testing.T) {
     },
     "response": [
       {
-        "body": { "message": "{{now_rfc3339}}" }
+        "body_template": "{ \"message\": \"{{now_rfc3339}}\" }"
       }
     ]
   }

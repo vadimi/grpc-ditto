@@ -2,12 +2,14 @@ package dittomock
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 
 	"github.com/golang/protobuf/jsonpb"
 	pstruct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/vadimi/grpc-ditto/api"
 	"google.golang.org/grpc/codes"
+	"sigs.k8s.io/yaml"
 )
 
 func FromProto(req *api.DittoMock) (DittoMock, error) {
@@ -41,6 +43,20 @@ func FromProto(req *api.DittoMock) (DittoMock, error) {
 						Code:    codes.Code(status.GetCode()),
 						Message: status.GetMessage(),
 					},
+				})
+			case *api.DittoResponse_BodyTemplate:
+				respBodyStr := src.GetBodyTemplate()
+				respBody, err := processTemplate([]byte(respBodyStr))
+				if err != nil {
+					return m, fmt.Errorf("cannot parse response body template: %w", err)
+				}
+
+				body, err := loadJSON(respBody)
+				if err != nil {
+					return m, fmt.Errorf("cannot load reponse body: %w", err)
+				}
+				m.Response = append(m.Response, &DittoResponse{
+					Body: body,
 				})
 			}
 		}
@@ -79,11 +95,11 @@ func jsonPathWrapper(p *api.JSONPathPattern) *JSONPathWrapper {
 
 	switch p.GetOperator().(type) {
 	case *api.JSONPathPattern_Eq:
-		w.JSONPathMessage.Equals = p.GetEq()
+		w.Equals = p.GetEq()
 	case *api.JSONPathPattern_Regexp:
-		w.JSONPathMessage.Regexp = p.GetRegexp()
+		w.Regexp = p.GetRegexp()
 	case *api.JSONPathPattern_Contains:
-		w.JSONPathMessage.Contains = p.GetContains()
+		w.Contains = p.GetContains()
 	default:
 		w.Partial = true
 	}
@@ -102,4 +118,24 @@ func structToBytes(msg *pstruct.Struct) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+// try converting yaml to json first
+func loadJSON(b []byte) ([]byte, error) {
+	if len(b) == 0 {
+		return []byte("{}"), nil
+	}
+	if b[0] == '{' || b[0] == '[' {
+		var raw json.RawMessage
+		err := json.Unmarshal(b, &raw)
+		if err != nil {
+			return nil, err
+		}
+		return b, nil
+	}
+	js, err := yaml.YAMLToJSON(b)
+	if err != nil {
+		return nil, err
+	}
+	return js, nil
 }

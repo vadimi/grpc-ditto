@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -359,4 +360,42 @@ func TestPartialJSONPathEqualsMatching(t *testing.T) {
 		require.NotNil(t, mock)
 		assert.Equal(t, []byte("ok"), []byte(mock.Response[0].Body))
 	}
+}
+
+func TestMockLoaderJSON_ResponseBodyTemplate(t *testing.T) {
+	js := `[
+  {
+    "request": {
+      "method": "/greet.Greeter/SayHello",
+      "body_patterns": [
+        {
+          "matches_jsonpath": { "expression": "$.name", "eq": "Bob" }
+        }
+      ]
+    },
+    "response": [
+      {
+        "body_template": "{ \"message\": \"{{now_rfc3339}}\" }"
+      }
+    ]
+  }
+]
+`
+	r := strings.NewReader(js)
+
+	rm, err := NewRequestMatcher()
+	require.NoError(t, err)
+
+	mocks, err := rm.loadMockJSON(r)
+	require.NoError(t, err)
+	assert.NotEmpty(t, mocks)
+	assert.Equal(t, "/greet.Greeter/SayHello", mocks[0].Request.Method)
+	assert.Equal(t, "$.name", mocks[0].Request.BodyPatterns[0].MatchesJsonPath.Expression)
+	assert.Equal(t, "Bob", mocks[0].Request.BodyPatterns[0].MatchesJsonPath.Equals)
+
+	var body map[string]string
+	err = json.Unmarshal(mocks[0].Response[0].Body, &body)
+	require.NoError(t, err)
+	_, err = time.Parse(time.RFC3339, body["message"])
+	require.NoError(t, err)
 }

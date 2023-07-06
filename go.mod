@@ -7,7 +7,7 @@ require (
 	github.com/jhump/protoreflect v1.15.1
 	github.com/jsternberg/zap-logfmt v1.3.0
 	github.com/spyzhov/ajson v0.8.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli v1.22.10
 	go.uber.org/zap v1.23.0
 	golang.org/x/text v0.11.0

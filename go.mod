@@ -3,7 +3,7 @@ module github.com/vadimi/grpc-ditto
 go 1.19
 
 require (
-	github.com/golang/protobuf v1.5.2
+	github.com/golang/protobuf v1.5.3
 	github.com/jhump/protoreflect v1.14.0
 	github.com/jsternberg/zap-logfmt v1.3.0
 	github.com/spyzhov/ajson v0.7.1

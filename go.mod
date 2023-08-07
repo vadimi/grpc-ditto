@@ -12,7 +12,7 @@ require (
 	go.uber.org/zap v1.25.0
 	golang.org/x/text v0.11.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230526203410-71b5a4ffd15e
-	google.golang.org/grpc v1.56.2
+	google.golang.org/grpc v1.57.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.3.0
 	google.golang.org/protobuf v1.31.0
 	sigs.k8s.io/yaml v1.3.0

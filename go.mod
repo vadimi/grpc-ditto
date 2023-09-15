@@ -9,7 +9,7 @@ require (
 	github.com/spyzhov/ajson v0.9.0
 	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli v1.22.14
-	go.uber.org/zap v1.25.0
+	go.uber.org/zap v1.26.0
 	golang.org/x/text v0.13.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230711160842-782d3b101e98
 	google.golang.org/grpc v1.58.0

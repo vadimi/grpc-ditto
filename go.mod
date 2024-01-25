@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/golang/protobuf v1.5.3
-	github.com/jhump/protoreflect v1.15.4
+	github.com/jhump/protoreflect v1.15.5
 	github.com/jsternberg/zap-logfmt v1.3.0
 	github.com/spyzhov/ajson v0.9.0
 	github.com/stretchr/testify v1.8.4
@@ -19,7 +19,7 @@ require (
 )
 
 require (
-	github.com/bufbuild/protocompile v0.7.1 // indirect
+	github.com/bufbuild/protocompile v0.8.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

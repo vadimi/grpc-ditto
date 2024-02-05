@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/golang/protobuf v1.5.3
-	github.com/jhump/protoreflect v1.15.5
+	github.com/jhump/protoreflect v1.15.6
 	github.com/jsternberg/zap-logfmt v1.3.0
 	github.com/spyzhov/ajson v0.9.0
 	github.com/stretchr/testify v1.8.4

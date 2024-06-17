@@ -6,7 +6,7 @@ require (
 	github.com/golang/protobuf v1.5.4
 	github.com/jhump/protoreflect v1.16.0
 	github.com/jsternberg/zap-logfmt v1.3.0
-	github.com/spyzhov/ajson v0.9.1
+	github.com/spyzhov/ajson v0.9.3
 	github.com/stretchr/testify v1.9.0
 	github.com/urfave/cli v1.22.15
 	go.uber.org/zap v1.27.0

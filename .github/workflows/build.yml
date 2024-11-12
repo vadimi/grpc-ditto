@@ -19,7 +19,8 @@ jobs:
       - name: setup go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22
+          go-version: '>=1.23.3'
+
 
       - name: test
         run: |
@@ -63,6 +64,7 @@ jobs:
         id: prep
         run: |
           find . -name "grpc-ditto*" -type f -exec chmod +x {} \;
+          echo "tags={value}" >> $GITHUB_OUTPUT
           echo ::set-output name=tags::${GITHUB_REF#refs/tags/v}
 
       - name: create release

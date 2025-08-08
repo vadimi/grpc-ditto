@@ -2,6 +2,8 @@ module github.com/vadimi/grpc-ditto
 
 go 1.23.0
 
+toolchain go1.24.1
+
 require (
 	github.com/golang/protobuf v1.5.4
 	github.com/jhump/protoreflect v1.17.0

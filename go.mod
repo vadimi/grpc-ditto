@@ -1,6 +1,6 @@
 module github.com/vadimi/grpc-ditto
 
-go 1.23.0
+go 1.24.0
 
 toolchain go1.24.1
 
@@ -15,8 +15,8 @@ require (
 	golang.org/x/text v0.28.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7
 	google.golang.org/grpc v1.75.0
-	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.5.1
-	google.golang.org/protobuf v1.36.8
+	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.6.0
+	google.golang.org/protobuf v1.36.10
 	sigs.k8s.io/yaml v1.6.0
 )
 

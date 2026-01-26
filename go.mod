@@ -6,7 +6,7 @@ toolchain go1.24.1
 
 require (
 	github.com/golang/protobuf v1.5.4
-	github.com/jhump/protoreflect v1.17.0
+	github.com/jhump/protoreflect v1.18.0
 	github.com/jsternberg/zap-logfmt v1.3.0
 	github.com/spyzhov/ajson v0.9.6
 	github.com/stretchr/testify v1.10.0
@@ -16,14 +16,15 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda
 	google.golang.org/grpc v1.78.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.5.1
-	google.golang.org/protobuf v1.36.10
+	google.golang.org/protobuf v1.36.11
 	sigs.k8s.io/yaml v1.6.0
 )
 
 require (
-	github.com/bufbuild/protocompile v0.14.1 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/jhump/protoreflect/v2 v2.0.0-beta.1 // indirect
+	github.com/petermattis/goid v0.0.0-20260113132338-7c7de50cc741 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect

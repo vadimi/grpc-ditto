@@ -1,8 +1,6 @@
 module github.com/vadimi/grpc-ditto
 
-go 1.24.0
-
-toolchain go1.24.1
+go 1.25.0
 
 require (
 	github.com/golang/protobuf v1.5.4
@@ -12,9 +10,9 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli v1.22.16
 	go.uber.org/zap v1.27.0
-	golang.org/x/text v0.31.0
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda
-	google.golang.org/grpc v1.78.0
+	golang.org/x/text v0.34.0
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171
+	google.golang.org/grpc v1.81.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.5.1
 	google.golang.org/protobuf v1.36.11
 	sigs.k8s.io/yaml v1.6.0
@@ -29,8 +27,8 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
-	golang.org/x/net v0.47.0 // indirect
-	golang.org/x/sync v0.18.0 // indirect
-	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/net v0.51.0 // indirect
+	golang.org/x/sync v0.20.0 // indirect
+	golang.org/x/sys v0.42.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
